@@ -1,0 +1,7 @@
+parameters:
+    level: max
+    paths:
+        - src
+        - tests
+    checkMissingOverrideMethodAttribute: true
+    reportUnmatchedIgnoredErrors: false

@@ -1,0 +1,51 @@
+{
+    "name": "crystaldaking/finance-core",
+    "description": "Framework-agnostic PHP financial core for money, assets, ledgering, fees, audit, events and idempotency.",
+    "type": "library",
+    "license": "Apache-2.0",
+    "require": {
+        "php": "^8.5",
+        "brick/math": "^0.17",
+        "psr/clock": "^1.0"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.77",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^12.2",
+        "vimeo/psalm": "^6.12"
+    },
+    "autoload": {
+        "psr-4": {
+            "Crystal\\Finance\\Core\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Crystal\\Finance\\Core\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse:phpstan": "phpstan analyse --memory-limit=1G",
+        "analyse:psalm": "psalm --no-cache",
+        "analyse": [
+            "@analyse:phpstan",
+            "@analyse:psalm"
+        ],
+        "cs": "php-cs-fixer fix --dry-run --diff",
+        "cs:fix": "php-cs-fixer fix",
+        "qa": [
+            "composer validate --strict",
+            "@cs",
+            "@analyse",
+            "@test"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "phpstan/extension-installer": true
+        },
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}

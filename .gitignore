@@ -1,0 +1,8 @@
+/.phpunit.cache/
+/.php-cs-fixer.cache
+/.phpstan.result-cache
+/.psalm/
+/build/
+/coverage/
+/vendor/
+composer.lock
