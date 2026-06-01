@@ -6,7 +6,7 @@ Financial applications need auditable movement of value.
 
 ## Decision
 
-The core exposes append-only double-entry ledger transactions that balance per asset.
+The core exposes append-only double-entry ledger transactions that balance per asset. Ledger account ids are opaque validated identifiers; asset identity comes from `Money`, not from account string parsing.
 
 ## Consequences
 

@@ -7,3 +7,4 @@ This repository is a framework-agnostic PHP financial core.
 - Prefer immutable value objects and explicit invariants.
 - Run `composer qa` before committing release milestones.
 - Payment provider adapters, webhooks, Laravel integration, reports, taxes, and persistence adapters are out of scope for `finance-core` v1.
+- Before adding a public type, decide whether it belongs in generic finance-core or future payments-core.

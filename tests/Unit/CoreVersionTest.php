@@ -11,6 +11,6 @@ final class CoreVersionTest extends TestCase
 {
     public function testVersionConstantExists(): void
     {
-        self::assertSame('0.5.0', CoreVersion::VERSION);
+        self::assertSame('0.9.0', CoreVersion::VERSION);
     }
 }
