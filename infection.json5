@@ -1,0 +1,23 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": [
+            "src"
+        ]
+    },
+    "timeout": 10,
+    "threads": "max",
+    "tmpDir": "build/infection/tmp",
+    "logs": {
+        "text": "build/infection/infection.log",
+        "summaryJson": "build/infection/summary.json"
+    },
+    "phpUnit": {
+        "configDir": "."
+    },
+    "minMsi": 85,
+    "minCoveredMsi": 85,
+    "mutators": {
+        "@default": true
+    }
+}

@@ -7,7 +7,9 @@ namespace Crystal\Finance\Core\Tests\Unit\Audit;
 use Crystal\Finance\Core\Audit\Actor;
 use Crystal\Finance\Core\Audit\ActorType;
 use Crystal\Finance\Core\Audit\AuditContext;
+use Crystal\Finance\Core\Audit\CausationId;
 use Crystal\Finance\Core\Audit\CorrelationId;
+use Crystal\Finance\Core\Audit\RequestId;
 use Crystal\Finance\Core\Exception\InvalidAuditContext;
 use Crystal\Finance\Core\Tests\Fixtures\FixedClock;
 use DateTimeImmutable;
@@ -62,9 +64,20 @@ final class AuditContextTest extends TestCase
             'User action',
             new DateTimeImmutable('2026-01-01T00:00:00+00:00'),
             correlationId: CorrelationId::fromString('1'),
+            causationId: CausationId::fromString('2'),
+            requestId: RequestId::fromString('3'),
         );
 
         self::assertSame('1', $context->actor()->id());
         self::assertSame('1', $context->correlationId()?->value());
+        self::assertSame('2', $context->causationId()?->value());
+        self::assertSame('3', $context->requestId()?->value());
+    }
+
+    public function testInvalidAuditIdentifierIsRejected(): void
+    {
+        $this->expectException(InvalidAuditContext::class);
+
+        RequestId::fromString('bad id');
     }
 }

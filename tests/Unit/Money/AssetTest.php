@@ -8,9 +8,11 @@ use Crystal\Finance\Core\Exception\InvalidAsset;
 use Crystal\Finance\Core\Exception\InvalidAssetCode;
 use Crystal\Finance\Core\Exception\InvalidNetwork;
 use Crystal\Finance\Core\Money\Asset;
+use Crystal\Finance\Core\Money\AssetCode;
 use Crystal\Finance\Core\Money\AssetId;
 use Crystal\Finance\Core\Money\AssetRegistry;
 use Crystal\Finance\Core\Money\AssetType;
+use Crystal\Finance\Core\Money\Network;
 use PHPUnit\Framework\TestCase;
 
 final class AssetTest extends TestCase
@@ -34,6 +36,13 @@ final class AssetTest extends TestCase
         self::assertSame('USDT@TRON', $tronUsdt->id()->value());
         self::assertSame('USDT@ETHEREUM', $ethereumUsdt->id()->value());
         self::assertFalse($tronUsdt->equals($ethereumUsdt));
+    }
+
+    public function testAssetIdAcceptsParsedCodeAndNetworkObjects(): void
+    {
+        $id = AssetId::crypto(AssetCode::fromString('USDT'), Network::fromString('TRON'));
+
+        self::assertSame('USDT@TRON', (string) $id);
     }
 
     public function testDefaultRegistryContainsNetworkAwareCryptoAssets(): void
@@ -87,5 +96,12 @@ final class AssetTest extends TestCase
         $id = AssetId::fromString('USDT@TRON');
 
         self::assertSame('USDT@TRON', $id->value());
+    }
+
+    public function testAssetIdRejectsMalformedNetworkAwareFormat(): void
+    {
+        $this->expectException(InvalidAsset::class);
+
+        AssetId::fromString('USDT@TRON@EXTRA');
     }
 }

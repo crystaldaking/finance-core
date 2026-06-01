@@ -4,5 +4,7 @@ parameters:
         - src
         - tests
         - examples
+        - demo
+        - tools
     checkMissingOverrideMethodAttribute: true
     reportUnmatchedIgnoredErrors: false

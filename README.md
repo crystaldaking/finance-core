@@ -116,9 +116,15 @@ Concrete Redis, SQL, cache, and lock implementations live outside this package.
 
 ```bash
 composer qa
+composer coverage
+composer mutation
 ```
 
-The QA suite validates Composer metadata, coding style, PHPStan max level, Psalm strict analysis, PHPUnit unit tests, and architecture boundaries.
+The QA suite validates Composer metadata, coding style, PHPStan max level, Psalm strict analysis, PHPUnit unit tests, and architecture boundaries. The hardening suite adds line coverage and mutation testing:
+
+```bash
+composer hardening
+```
 
 ## Examples
 
@@ -134,3 +140,12 @@ The `examples/` directory contains executable real-life usage scenarios:
 - idempotent command execution
 - FX conversion
 - audit context and domain events
+
+`demo/merchant-finance-flow.php` is an executable integration proof that combines money, fees, ledger posting, audit context, a domain event, and an idempotency fingerprint in one merchant finance scenario.
+
+## Release Governance
+
+- Backward compatibility policy: `docs/backward-compatibility.md`
+- Public API contract: `docs/public-api.md`
+- Release checklist: `docs/release/checklist.md`
+- Changelog: `CHANGELOG.md`

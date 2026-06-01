@@ -46,14 +46,5 @@ final readonly class LedgerValidator
             }
         }
 
-        foreach ($credits as $assetId => $creditAmount) {
-            if (!isset($debits[$assetId]) && !$creditAmount->isZero()) {
-                throw UnbalancedLedgerTransaction::forAsset(
-                    $assetId,
-                    Money::zero($creditAmount->asset())->toDecimalString(),
-                    $creditAmount->toDecimalString(),
-                );
-            }
-        }
     }
 }

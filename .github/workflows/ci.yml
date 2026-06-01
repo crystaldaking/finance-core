@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    name: QA (${{ matrix.dependencies }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dependencies:
+          - highest
+          - lowest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Validate Composer metadata
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: |
+          if [ "${{ matrix.dependencies }}" = "lowest" ]; then
+            composer update --prefer-lowest --prefer-stable --no-interaction --no-progress
+          else
+            composer update --no-interaction --no-progress
+          fi
+
+      - name: QA
+        run: composer qa
+
+      - name: Coverage
+        if: matrix.dependencies == 'highest'
+        run: composer coverage
+
+      - name: Upload coverage artifact
+        if: matrix.dependencies == 'highest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: build/coverage
+
+  mutation:
+    name: Mutation Testing
+    runs-on: ubuntu-latest
+    needs: qa
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer update --no-interaction --no-progress
+
+      - name: Mutation testing
+        run: composer mutation
+
+      - name: Upload mutation artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: build/infection

@@ -6,7 +6,9 @@ Financial commands are commonly retried.
 
 ## Decision
 
-The core provides idempotency keys, scopes, canonical payload fingerprints, records, runner behavior, and storage contracts. Stores must implement atomic begin semantics.
+The core provides idempotency keys, scopes, canonical payload fingerprints, records, runner behavior, and storage contracts. Stores must implement atomic begin semantics for active records.
+
+Expired records are claimable again. A concrete store may hide expired records from `find()` or atomically replace them during `begin()`.
 
 ## Consequences
 

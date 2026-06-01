@@ -53,6 +53,20 @@ final class IdempotencyTest extends TestCase
         self::assertFalse($first->equals($second));
     }
 
+    public function testFingerprintCanBeCreatedFromString(): void
+    {
+        $fingerprint = PayloadFingerprint::fromString('sha256:' . str_repeat('a', 64));
+
+        self::assertSame('sha256:' . str_repeat('a', 64), $fingerprint->value());
+    }
+
+    public function testInvalidFingerprintStringIsRejected(): void
+    {
+        $this->expectException(InvalidPayloadFingerprint::class);
+
+        PayloadFingerprint::fromString('md5:' . str_repeat('a', 32));
+    }
+
     public function testFingerprintRejectsFloatingPointPayloadValues(): void
     {
         $this->expectException(InvalidPayloadFingerprint::class);

@@ -12,7 +12,10 @@ interface IdempotencyStore
     public function find(IdempotencyScope $scope, IdempotencyKey $key): ?IdempotencyRecord;
 
     /**
-     * Implementations must provide atomic create-if-absent semantics for the scope/key pair.
+     * Implementations must provide atomic create-if-absent semantics for active records.
+     *
+     * Expired records are claimable again. A store may either hide expired records from find()
+     * or atomically replace them during begin().
      */
     public function begin(
         IdempotencyScope $scope,

@@ -7,6 +7,7 @@ namespace Crystal\Finance\Core\Tests\Unit\Fee;
 use Crystal\Finance\Core\Exception\AssetMismatch;
 use Crystal\Finance\Core\Exception\InvalidFeeRule;
 use Crystal\Finance\Core\Fee\FeeCalculator;
+use Crystal\Finance\Core\Fee\FeeComponentType;
 use Crystal\Finance\Core\Fee\FeeContext;
 use Crystal\Finance\Core\Fee\FeeRule;
 use Crystal\Finance\Core\Money\AssetRegistry;
@@ -27,6 +28,9 @@ final class FeeCalculatorTest extends TestCase
         self::assertSame('2.50', $result->totalFee()->toDecimalString());
         self::assertSame('97.50', $result->net()->toDecimalString());
         self::assertSame('service_fee', $result->breakdown()->lines()[0]->label());
+        self::assertSame(FeeComponentType::Percentage, $result->breakdown()->lines()[0]->type());
+        self::assertSame('test_operation', $result->context()->operation());
+        self::assertSame(['test' => true], $result->context()->metadata());
     }
 
     public function testFixedFee(): void
@@ -139,6 +143,17 @@ final class FeeCalculatorTest extends TestCase
 
         self::assertSame('0.01', $halfUp->totalFee()->toDecimalString());
         self::assertSame('0.00', $down->totalFee()->toDecimalString());
+    }
+
+    public function testAllRoundingModesAreMapped(): void
+    {
+        $mappedNames = [];
+
+        foreach (RoundingMode::cases() as $roundingMode) {
+            $mappedNames[] = $roundingMode->toBrick()->name;
+        }
+
+        self::assertCount(count(RoundingMode::cases()), array_unique($mappedNames));
     }
 
     public function testMaximumCannotBeLowerThanMinimum(): void

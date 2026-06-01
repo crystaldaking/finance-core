@@ -1,0 +1,29 @@
+name: Financial invariant concern
+description: Report a possible financial correctness or invariant issue.
+title: "[Invariant]: "
+labels:
+  - correctness
+  - financial-invariant
+body:
+  - type: textarea
+    id: invariant
+    attributes:
+      label: Invariant
+      description: Which invariant appears to be violated?
+    validations:
+      required: true
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Scenario
+      description: Include exact amounts, assets, rounding modes, ledger entries, or idempotency inputs.
+      render: php
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: What user, balance, ledger, or audit consequence could this have?
+    validations:
+      required: true

@@ -12,6 +12,7 @@ use Crystal\Finance\Core\Idempotency\IdempotencyStatus;
 use Crystal\Finance\Core\Idempotency\IdempotencyStore;
 use Crystal\Finance\Core\Idempotency\PayloadFingerprint;
 use DateTimeImmutable;
+use Psr\Clock\ClockInterface;
 use Throwable;
 
 final class InMemoryIdempotencyStore implements IdempotencyStore
@@ -20,6 +21,10 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
      * @var array<string, IdempotencyRecord>
      */
     private array $records = [];
+
+    public function __construct(private ?ClockInterface $clock = null)
+    {
+    }
 
     #[\Override]
     public function find(IdempotencyScope $scope, IdempotencyKey $key): ?IdempotencyRecord
@@ -37,11 +42,11 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
         $recordKey = $this->recordKey($scope, $key);
         $existing = $this->records[$recordKey] ?? null;
 
-        if ($existing !== null && !$existing->fingerprint()->equals($fingerprint)) {
+        if ($existing !== null && !$this->isExpired($existing) && !$existing->fingerprint()->equals($fingerprint)) {
             throw IdempotencyConflict::fingerprintMismatch($scope->value(), $key->value());
         }
 
-        if ($existing !== null && $existing->status() === IdempotencyStatus::Started) {
+        if ($existing !== null && !$this->isExpired($existing) && $existing->status() === IdempotencyStatus::Started) {
             throw IdempotencyConflict::alreadyStarted($scope->value(), $key->value());
         }
 
@@ -87,5 +92,10 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
     private function recordKey(IdempotencyScope $scope, IdempotencyKey $key): string
     {
         return $scope->value() . ':' . $key->value();
+    }
+
+    private function isExpired(IdempotencyRecord $record): bool
+    {
+        return $this->clock !== null && $record->isExpired($this->clock->now());
     }
 }

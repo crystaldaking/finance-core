@@ -17,18 +17,23 @@ final class DomainEventTest extends TestCase
 {
     public function testGenericEventCarriesMetadata(): void
     {
+        $occurredAt = new DateTimeImmutable('2026-01-01T00:00:00+00:00');
+        $auditContext = AuditContextFactory::system('Posted by test');
         $event = GenericDomainEvent::record(
             'Ledger.TransactionPosted',
             'ltx_123',
-            new DateTimeImmutable('2026-01-01T00:00:00+00:00'),
+            $occurredAt,
             EventMetadata::fromArray(['balanced' => true]),
+            $auditContext,
             eventId: EventId::fromString('evt_123'),
         );
 
         self::assertSame('evt_123', $event->eventId()->value());
         self::assertSame('Ledger.TransactionPosted', $event->eventName());
         self::assertSame('ltx_123', $event->aggregateId());
+        self::assertSame($occurredAt, $event->occurredAt());
         self::assertSame(['balanced' => true], $event->metadata()->toArray());
+        self::assertSame($auditContext, $event->auditContext());
     }
 
     public function testShortAggregateAndEventIdsAreAllowed(): void
@@ -55,6 +60,24 @@ final class DomainEventTest extends TestCase
         );
     }
 
+    public function testInvalidEventNameIsRejected(): void
+    {
+        $this->expectException(InvalidDomainEvent::class);
+
+        GenericDomainEvent::record(
+            'ledger.transaction_posted',
+            'ltx_123',
+            new DateTimeImmutable('2026-01-01T00:00:00+00:00'),
+        );
+    }
+
+    public function testInvalidEventIdentifierIsRejected(): void
+    {
+        $this->expectException(InvalidDomainEvent::class);
+
+        EventId::fromString('bad id');
+    }
+
     public function testRecordsEventsReleasesAndClearsEvents(): void
     {
         $aggregate = new EventRecordingFixture();
@@ -68,6 +91,18 @@ final class DomainEventTest extends TestCase
 
         self::assertCount(1, $aggregate->releaseEvents());
         self::assertCount(0, $aggregate->releaseEvents());
+    }
+}
+
+final class AuditContextFactory
+{
+    public static function system(string $reason): \Crystal\Finance\Core\Audit\AuditContext
+    {
+        return \Crystal\Finance\Core\Audit\AuditContext::record(
+            \Crystal\Finance\Core\Audit\Actor::system(),
+            $reason,
+            new DateTimeImmutable('2026-01-01T00:00:00+00:00'),
+        );
     }
 }
 

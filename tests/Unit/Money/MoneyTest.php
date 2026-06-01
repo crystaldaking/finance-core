@@ -47,6 +47,14 @@ final class MoneyTest extends TestCase
         $money = Money::ofMinor('1123456789123456789', 'ETH@ETHEREUM', $this->registry());
 
         self::assertSame('1.123456789123456789', $money->toDecimalString());
+        self::assertSame('1.123456789123456789', $money->amount()->toString());
+    }
+
+    public function testRejectsInvalidMinorUnitString(): void
+    {
+        $this->expectException(InvalidMoneyAmount::class);
+
+        Money::ofMinor('001', 'EUR', $this->registry());
     }
 
     public function testRejectsInvalidDecimalString(): void
@@ -78,6 +86,16 @@ final class MoneyTest extends TestCase
 
         $unused = Money::of('10.00', 'USDT@TRON', $this->registry())
             ->plus(Money::of('10.00', 'USDT@ETHEREUM', $this->registry()));
+    }
+
+    public function testChecksAssetIdentityExplicitly(): void
+    {
+        self::assertTrue(Money::of('1.00', 'EUR', $this->registry())->isSameAsset(
+            Money::of('2.00', 'EUR', $this->registry()),
+        ));
+        self::assertFalse(Money::of('1.00', 'USDT@TRON', $this->registry())->isSameAsset(
+            Money::of('1.00', 'USDT@ETHEREUM', $this->registry()),
+        ));
     }
 
     public function testMultipliesWithExplicitRounding(): void
@@ -135,5 +153,12 @@ final class MoneyTest extends TestCase
         $this->expectException(InvalidAllocation::class);
 
         $unused = Money::of('10.00', 'EUR', $this->registry())->allocate([1, 0]);
+    }
+
+    public function testAllocationRejectsEmptyRatios(): void
+    {
+        $this->expectException(InvalidAllocation::class);
+
+        $unused = Money::of('10.00', 'EUR', $this->registry())->allocate([]);
     }
 }
