@@ -30,7 +30,7 @@
         "psr/clock": "^1.0"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^3.77",
+        "friendsofphp/php-cs-fixer": "^3.95",
         "infection/infection": "^0.33",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^12.2",
