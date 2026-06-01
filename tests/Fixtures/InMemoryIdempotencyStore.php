@@ -1,0 +1,91 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Crystal\Finance\Core\Tests\Fixtures;
+
+use Crystal\Finance\Core\Exception\IdempotencyConflict;
+use Crystal\Finance\Core\Idempotency\IdempotencyKey;
+use Crystal\Finance\Core\Idempotency\IdempotencyRecord;
+use Crystal\Finance\Core\Idempotency\IdempotencyScope;
+use Crystal\Finance\Core\Idempotency\IdempotencyStatus;
+use Crystal\Finance\Core\Idempotency\IdempotencyStore;
+use Crystal\Finance\Core\Idempotency\PayloadFingerprint;
+use DateTimeImmutable;
+use Throwable;
+
+final class InMemoryIdempotencyStore implements IdempotencyStore
+{
+    /**
+     * @var array<string, IdempotencyRecord>
+     */
+    private array $records = [];
+
+    #[\Override]
+    public function find(IdempotencyScope $scope, IdempotencyKey $key): ?IdempotencyRecord
+    {
+        return $this->records[$this->recordKey($scope, $key)] ?? null;
+    }
+
+    #[\Override]
+    public function begin(
+        IdempotencyScope $scope,
+        IdempotencyKey $key,
+        PayloadFingerprint $fingerprint,
+        DateTimeImmutable $expiresAt,
+    ): IdempotencyRecord {
+        $recordKey = $this->recordKey($scope, $key);
+        $existing = $this->records[$recordKey] ?? null;
+
+        if ($existing !== null && !$existing->fingerprint()->equals($fingerprint)) {
+            throw IdempotencyConflict::fingerprintMismatch($scope->value(), $key->value());
+        }
+
+        if ($existing !== null && $existing->status() === IdempotencyStatus::Started) {
+            throw IdempotencyConflict::alreadyStarted($scope->value(), $key->value());
+        }
+
+        $record = new IdempotencyRecord($scope, $key, $fingerprint, IdempotencyStatus::Started, $expiresAt);
+        $this->records[$recordKey] = $record;
+
+        return $record;
+    }
+
+    #[\Override]
+    public function complete(IdempotencyRecord $record, mixed $result): IdempotencyRecord
+    {
+        $completed = new IdempotencyRecord(
+            $record->scope(),
+            $record->key(),
+            $record->fingerprint(),
+            IdempotencyStatus::Completed,
+            $record->expiresAt(),
+            $result,
+        );
+        $this->records[$this->recordKey($record->scope(), $record->key())] = $completed;
+
+        return $completed;
+    }
+
+    #[\Override]
+    public function fail(IdempotencyRecord $record, Throwable $throwable): IdempotencyRecord
+    {
+        $failed = new IdempotencyRecord(
+            $record->scope(),
+            $record->key(),
+            $record->fingerprint(),
+            IdempotencyStatus::Failed,
+            $record->expiresAt(),
+            null,
+            $throwable::class,
+        );
+        $this->records[$this->recordKey($record->scope(), $record->key())] = $failed;
+
+        return $failed;
+    }
+
+    private function recordKey(IdempotencyScope $scope, IdempotencyKey $key): string
+    {
+        return $scope->value() . ':' . $key->value();
+    }
+}
