@@ -25,6 +25,12 @@ final readonly class Asset
             throw InvalidAsset::missingNetwork($id->code()->value());
         }
 
+        $network = $id->network();
+
+        if ($type === AssetType::Fiat && $network !== null) {
+            throw InvalidAsset::unexpectedNetwork($network->value());
+        }
+
         $this->id = $id;
         $this->type = $type;
         $this->scale = self::validScale($scale);
@@ -77,6 +83,13 @@ final readonly class Asset
     public function equals(self $other): bool
     {
         return $this->id->equals($other->id);
+    }
+
+    public function isCompatibleWith(self $other): bool
+    {
+        return $this->id->equals($other->id)
+            && $this->type === $other->type
+            && $this->scale === $other->scale;
     }
 
     /**

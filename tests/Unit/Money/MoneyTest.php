@@ -8,6 +8,7 @@ use Crystal\Finance\Core\Exception\AssetMismatch;
 use Crystal\Finance\Core\Exception\InvalidAllocation;
 use Crystal\Finance\Core\Exception\InvalidMoneyAmount;
 use Crystal\Finance\Core\Exception\InvalidPercentage;
+use Crystal\Finance\Core\Money\Asset;
 use Crystal\Finance\Core\Money\AssetRegistry;
 use Crystal\Finance\Core\Money\Money;
 use Crystal\Finance\Core\Money\Percentage;
@@ -88,6 +89,14 @@ final class MoneyTest extends TestCase
             ->plus(Money::of('10.00', 'USDT@ETHEREUM', $this->registry()));
     }
 
+    public function testRejectsOperationsAcrossSameAssetIdWithDifferentScale(): void
+    {
+        $this->expectException(AssetMismatch::class);
+
+        $unused = Money::of('1.23', Asset::fiat('EUR', 2))
+            ->plus(Money::of('1.230', Asset::fiat('EUR', 3)));
+    }
+
     public function testChecksAssetIdentityExplicitly(): void
     {
         self::assertTrue(Money::of('1.00', 'EUR', $this->registry())->isSameAsset(
@@ -95,6 +104,13 @@ final class MoneyTest extends TestCase
         ));
         self::assertFalse(Money::of('1.00', 'USDT@TRON', $this->registry())->isSameAsset(
             Money::of('1.00', 'USDT@ETHEREUM', $this->registry()),
+        ));
+    }
+
+    public function testChecksAssetCompatibilityExplicitly(): void
+    {
+        self::assertFalse(Money::of('1.23', Asset::fiat('EUR', 2))->isCompatibleWith(
+            Money::of('1.230', Asset::fiat('EUR', 3)),
         ));
     }
 

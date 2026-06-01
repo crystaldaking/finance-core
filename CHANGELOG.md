@@ -4,6 +4,23 @@ All notable changes to `crystaldaking/finance-core` are documented here.
 
 The project follows Semantic Versioning after `v1.0.0`.
 
+## [1.0.1] - 2026-06-01
+
+### Fixed
+
+- Reject `Money` operations when two values share an `AssetId` but have incompatible asset configuration such as different scale.
+- Keep crypto and fiat asset network invariants symmetric, including rejection of fiat assets with a network-aware id.
+- Report malformed asset ids such as `CODE@NETWORK@EXTRA` as malformed ids instead of registry misses.
+- Use precise domain exceptions for invalid asset pairs, exchange conversion source mismatches, fee context metadata, and fee result invariants.
+- Enforce `FeeResult` consistency at construction time: `net` must equal `gross - totalFee`, and breakdown lines must sum to `totalFee`.
+- Validate fee, audit, ledger, and event metadata keys and values at runtime instead of relying only on PHPDoc.
+- Prevent ledger transactions with reversal state from being modified with additional entries or metadata.
+
+### Changed
+
+- Added safe factory helpers for fee breakdowns and breakdown lines while preserving the existing constructors with runtime validation.
+- Fee calculation now validates fixed, minimum, and maximum fee component assets against the gross amount using full asset compatibility.
+
 ## [1.0.0] - 2026-06-01
 
 ### Added

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Crystal\Finance\Core\Event;
 
+use Crystal\Finance\Core\Exception\InvalidDomainEvent;
+
 final readonly class EventMetadata
 {
     /**
@@ -11,6 +13,7 @@ final readonly class EventMetadata
      */
     private function __construct(private array $values)
     {
+        self::assertValidValues($values);
     }
 
     public static function empty(): self
@@ -32,5 +35,21 @@ final readonly class EventMetadata
     public function toArray(): array
     {
         return $this->values;
+    }
+
+    /**
+     * @param array<array-key, mixed> $values
+     */
+    private static function assertValidValues(array $values): void
+    {
+        foreach ($values as $key => $value) {
+            if (!is_string($key)) {
+                throw InvalidDomainEvent::invalidMetadataKey($key);
+            }
+
+            if (!is_string($value) && !is_int($value) && !is_bool($value) && $value !== null) {
+                throw InvalidDomainEvent::invalidMetadataValue($key);
+            }
+        }
     }
 }

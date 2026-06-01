@@ -78,6 +78,20 @@ final class DomainEventTest extends TestCase
         EventId::fromString('bad id');
     }
 
+    public function testMetadataRejectsNonStringKey(): void
+    {
+        $this->expectException(InvalidDomainEvent::class);
+
+        $this->metadataFromUncheckedArray([0 => 'import']);
+    }
+
+    public function testMetadataRejectsUnsupportedValue(): void
+    {
+        $this->expectException(InvalidDomainEvent::class);
+
+        $this->metadataFromUncheckedArray(['details' => ['nested' => true]]);
+    }
+
     public function testRecordsEventsReleasesAndClearsEvents(): void
     {
         $aggregate = new EventRecordingFixture();
@@ -91,6 +105,14 @@ final class DomainEventTest extends TestCase
 
         self::assertCount(1, $aggregate->releaseEvents());
         self::assertCount(0, $aggregate->releaseEvents());
+    }
+
+    /**
+     * @param array<array-key, mixed> $metadata
+     */
+    private function metadataFromUncheckedArray(array $metadata): void
+    {
+        (new \ReflectionMethod(EventMetadata::class, 'fromArray'))->invoke(null, $metadata);
     }
 }
 

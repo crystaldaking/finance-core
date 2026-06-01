@@ -16,6 +16,16 @@ final class InvalidFeeRule extends DomainException
         return new self('Fee maximum cannot be lower than fee minimum.');
     }
 
+    public static function componentAssetMismatch(string $label, string $expectedAssetId, string $actualAssetId): self
+    {
+        return new self(sprintf(
+            'Fee component "%s" asset mismatch: expected "%s", got "%s".',
+            $label,
+            $expectedAssetId,
+            $actualAssetId,
+        ));
+    }
+
     public static function netWouldBecomeNegative(string $gross, string $fee): self
     {
         return new self(sprintf('Fee "%s" cannot exceed gross amount "%s" unless negative net is explicitly allowed.', $fee, $gross));

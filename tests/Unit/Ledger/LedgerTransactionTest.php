@@ -184,6 +184,42 @@ final class LedgerTransactionTest extends TestCase
         $unused = $transaction->reverse(LedgerReference::manual('txn_010_second_reversal'));
     }
 
+    public function testMarkedReversedTransactionCannotBeModified(): void
+    {
+        $transaction = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('txn_012'),
+            id: LedgerTransactionId::fromString('ltx_012'),
+        )
+            ->debit($this->account('cash'), $this->money('25.00'))
+            ->credit($this->account('equity'), $this->money('25.00'))
+            ->markReversedBy(LedgerTransactionId::fromString('ltx_012_reversal'));
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        $unused = $transaction->debit($this->account('cash'), $this->money('1.00'));
+    }
+
+    public function testReversalTransactionCannotBeModified(): void
+    {
+        $transaction = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('txn_013'),
+            id: LedgerTransactionId::fromString('ltx_013'),
+        )
+            ->debit($this->account('cash'), $this->money('25.00'))
+            ->credit($this->account('equity'), $this->money('25.00'));
+
+        $reversal = $transaction->reverse(
+            LedgerReference::manual('txn_013_reversal'),
+            LedgerTransactionId::fromString('ltx_013_reversal'),
+        )->reversal();
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        $unused = $reversal->credit($this->account('equity'), $this->money('1.00'));
+    }
+
     public function testEmptyTransactionCannotBeReversed(): void
     {
         $transaction = LedgerTransaction::make(

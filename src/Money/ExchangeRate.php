@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Crystal\Finance\Core\Money;
 
+use Crystal\Finance\Core\Exception\InvalidExchangeConversion;
+
 final readonly class ExchangeRate
 {
     private function __construct(
@@ -29,8 +31,8 @@ final readonly class ExchangeRate
 
     public function convert(Money $money, RoundingMode $roundingMode): Money
     {
-        if (!$money->asset()->equals($this->pair->base())) {
-            throw \Crystal\Finance\Core\Exception\AssetMismatch::between(
+        if (!$money->asset()->isCompatibleWith($this->pair->base())) {
+            throw InvalidExchangeConversion::sourceAssetMismatch(
                 $money->asset()->id()->value(),
                 $this->pair->base()->id()->value(),
             );

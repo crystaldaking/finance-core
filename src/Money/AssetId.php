@@ -38,7 +38,7 @@ final readonly class AssetId
             return self::crypto($parts[0], $parts[1]);
         }
 
-        throw InvalidAsset::notFound($value);
+        throw InvalidAsset::malformedId($value);
     }
 
     public function code(): AssetCode

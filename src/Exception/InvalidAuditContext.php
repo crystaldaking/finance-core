@@ -15,4 +15,14 @@ final class InvalidAuditContext extends DomainException
     {
         return new self('Audit reason cannot be empty.');
     }
+
+    public static function invalidMetadataKey(int|string $key): self
+    {
+        return new self(sprintf('Invalid audit metadata key "%s". Metadata keys must be strings.', (string) $key));
+    }
+
+    public static function invalidMetadataValue(string $key): self
+    {
+        return new self(sprintf('Invalid audit metadata value for key "%s". Use string, int, bool or null.', $key));
+    }
 }

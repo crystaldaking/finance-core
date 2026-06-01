@@ -25,6 +25,8 @@ final readonly class AuditContext
         if (trim($reason) === '') {
             throw InvalidAuditContext::emptyReason();
         }
+
+        self::assertValidMetadata($metadata);
     }
 
     /**
@@ -86,5 +88,21 @@ final readonly class AuditContext
     public function metadata(): array
     {
         return $this->metadata;
+    }
+
+    /**
+     * @param array<array-key, mixed> $metadata
+     */
+    private static function assertValidMetadata(array $metadata): void
+    {
+        foreach ($metadata as $key => $value) {
+            if (!is_string($key)) {
+                throw InvalidAuditContext::invalidMetadataKey($key);
+            }
+
+            if (!is_string($value) && !is_int($value) && !is_bool($value) && $value !== null) {
+                throw InvalidAuditContext::invalidMetadataValue($key);
+            }
+        }
     }
 }

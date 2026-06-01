@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Crystal\Finance\Core\Fee;
 
-use Crystal\Finance\Core\Exception\AssetMismatch;
 use Crystal\Finance\Core\Exception\InvalidFeeRule;
 use Crystal\Finance\Core\Money\Money;
 
@@ -33,24 +32,23 @@ final readonly class FeeCalculator
         if ($minimum !== null && $totalFee->compareTo($minimum) < 0) {
             $adjustment = $minimum->minus($totalFee);
             $totalFee = $minimum;
-            $lines[] = new FeeBreakdownLine('minimum_fee_adjustment', FeeComponentType::Minimum, $adjustment);
+            $lines[] = FeeBreakdownLine::minimumAdjustment($adjustment);
         }
 
         if ($maximum !== null && $totalFee->compareTo($maximum) > 0) {
             $adjustment = $maximum->minus($totalFee);
             $totalFee = $maximum;
-            $lines[] = new FeeBreakdownLine('maximum_fee_adjustment', FeeComponentType::Maximum, $adjustment);
+            $lines[] = FeeBreakdownLine::maximumAdjustment($adjustment);
         }
 
         if (!$rule->negativeNetAllowed() && $totalFee->compareTo($amount) > 0) {
             throw InvalidFeeRule::netWouldBecomeNegative($amount->toDecimalString(), $totalFee->toDecimalString());
         }
 
-        return new FeeResult(
+        return FeeResult::of(
             $amount,
             $totalFee,
-            $amount->minus($totalFee),
-            new FeeBreakdown($lines),
+            FeeBreakdown::of(...$lines),
             $context,
         );
     }
@@ -68,7 +66,7 @@ final readonly class FeeCalculator
 
         $fee = $amount->percentage($percentage, $component->roundingMode());
         $totalFee = $totalFee->plus($fee);
-        $lines[] = new FeeBreakdownLine($component->label(), $component->type(), $fee);
+        $lines[] = FeeBreakdownLine::component($component->label(), $component->type(), $fee);
     }
 
     /**
@@ -78,7 +76,7 @@ final readonly class FeeCalculator
     {
         $fee = $this->validatedAmount($amount, $component);
         $totalFee = $totalFee->plus($fee);
-        $lines[] = new FeeBreakdownLine($component->label(), $component->type(), $fee);
+        $lines[] = FeeBreakdownLine::component($component->label(), $component->type(), $fee);
     }
 
     private function validatedAmount(Money $amount, FeeComponent $component): Money
@@ -89,8 +87,12 @@ final readonly class FeeCalculator
             throw InvalidFeeRule::negativeComponent($component->label());
         }
 
-        if (!$componentAmount->asset()->equals($amount->asset())) {
-            throw AssetMismatch::between($amount->asset()->id()->value(), $componentAmount->asset()->id()->value());
+        if (!$componentAmount->asset()->isCompatibleWith($amount->asset())) {
+            throw InvalidFeeRule::componentAssetMismatch(
+                $component->label(),
+                $amount->asset()->id()->value(),
+                $componentAmount->asset()->id()->value(),
+            );
         }
 
         return $componentAmount;

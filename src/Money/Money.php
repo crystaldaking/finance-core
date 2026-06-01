@@ -142,6 +142,11 @@ final readonly class Money
         return $this->asset->equals($other->asset);
     }
 
+    public function isCompatibleWith(self $other): bool
+    {
+        return $this->asset->isCompatibleWith($other->asset);
+    }
+
     public function toDecimalString(): string
     {
         return $this->amount->toString();
@@ -209,6 +214,16 @@ final readonly class Money
     {
         if (!$this->asset->equals($other->asset)) {
             throw AssetMismatch::between($this->asset->id()->value(), $other->asset->id()->value());
+        }
+
+        if (!$this->asset->isCompatibleWith($other->asset)) {
+            throw AssetMismatch::incompatibleConfiguration(
+                $this->asset->id()->value(),
+                $this->asset->type()->value,
+                $this->asset->scale(),
+                $other->asset->type()->value,
+                $other->asset->scale(),
+            );
         }
     }
 

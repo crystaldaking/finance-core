@@ -10,4 +10,21 @@ final class AssetMismatch extends DomainException
     {
         return new self(sprintf('Asset mismatch: "%s" cannot be combined with "%s".', $leftAssetId, $rightAssetId));
     }
+
+    public static function incompatibleConfiguration(
+        string $assetId,
+        string $leftType,
+        int $leftScale,
+        string $rightType,
+        int $rightScale,
+    ): self {
+        return new self(sprintf(
+            'Asset "%s" has incompatible configuration: %s scale %d cannot be combined with %s scale %d.',
+            $assetId,
+            $leftType,
+            $leftScale,
+            $rightType,
+            $rightScale,
+        ));
+    }
 }

@@ -80,4 +80,35 @@ final class AuditContextTest extends TestCase
 
         RequestId::fromString('bad id');
     }
+
+    public function testRejectsNonStringMetadataKey(): void
+    {
+        $this->expectException(InvalidAuditContext::class);
+
+        $this->recordWithUncheckedMetadata([0 => 'import']);
+    }
+
+    public function testRejectsUnsupportedMetadataValue(): void
+    {
+        $this->expectException(InvalidAuditContext::class);
+
+        $this->recordWithUncheckedMetadata(['details' => ['nested' => true]]);
+    }
+
+    /**
+     * @param array<array-key, mixed> $metadata
+     */
+    private function recordWithUncheckedMetadata(array $metadata): void
+    {
+        (new \ReflectionMethod(AuditContext::class, 'record'))->invoke(
+            null,
+            Actor::system(),
+            'System action',
+            new DateTimeImmutable('2026-01-01T00:00:00+00:00'),
+            null,
+            null,
+            null,
+            $metadata,
+        );
+    }
 }

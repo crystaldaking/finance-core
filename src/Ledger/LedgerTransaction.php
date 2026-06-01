@@ -55,6 +55,8 @@ final readonly class LedgerTransaction
     #[\NoDiscard]
     public function withMetadata(LedgerMetadata $metadata): self
     {
+        $this->assertMutable();
+
         return new self(
             $this->id,
             $this->type,
@@ -103,6 +105,10 @@ final readonly class LedgerTransaction
     #[\NoDiscard]
     public function markReversedBy(LedgerTransactionId $reversalId): self
     {
+        if ($this->reversalOf !== null) {
+            throw InvalidLedgerTransaction::reversalCannotBeReversed($this->id->value());
+        }
+
         if ($this->reversedBy !== null) {
             throw InvalidLedgerTransaction::alreadyReversed($this->id->value());
         }
@@ -163,6 +169,8 @@ final readonly class LedgerTransaction
 
     private function withEntry(LedgerEntry $entry): self
     {
+        $this->assertMutable();
+
         $entries = $this->entries;
         $entries[] = $entry;
 
@@ -175,5 +183,12 @@ final readonly class LedgerTransaction
             $this->reversalOf,
             $this->reversedBy,
         );
+    }
+
+    private function assertMutable(): void
+    {
+        if ($this->reversalOf !== null || $this->reversedBy !== null) {
+            throw InvalidLedgerTransaction::reversedTransactionCannotBeModified($this->id->value());
+        }
     }
 }

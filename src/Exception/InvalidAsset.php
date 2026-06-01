@@ -21,8 +21,18 @@ final class InvalidAsset extends DomainException
         return new self(sprintf('Asset "%s" is not registered.', $assetId));
     }
 
+    public static function malformedId(string $assetId): self
+    {
+        return new self(sprintf('Malformed asset id "%s". Use CODE or CODE@NETWORK.', $assetId));
+    }
+
     public static function duplicate(string $assetId): self
     {
         return new self(sprintf('Asset "%s" is already registered.', $assetId));
+    }
+
+    public static function unexpectedNetwork(string $network): self
+    {
+        return new self(sprintf('Asset with network "%s" is not supported.', $network));
     }
 }

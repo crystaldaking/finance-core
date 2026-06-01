@@ -29,6 +29,20 @@ final class LedgerValueObjectTest extends TestCase
         self::assertSame(['source' => 'import', 'verified' => true, 'line' => 10], $metadata->toArray());
     }
 
+    public function testMetadataRejectsNonStringKey(): void
+    {
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        $this->metadataFromUncheckedArray([0 => 'import']);
+    }
+
+    public function testMetadataRejectsUnsupportedValue(): void
+    {
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        $this->metadataFromUncheckedArray(['details' => ['nested' => true]]);
+    }
+
     public function testReferenceExposesPartsEqualityAndStringValue(): void
     {
         $reference = LedgerReference::of('invoice', 'INV-2026:001');
@@ -80,5 +94,13 @@ final class LedgerValueObjectTest extends TestCase
 
         self::assertTrue($accountId->equals($balance->accountId()));
         self::assertSame('12.34', $balance->balance()->toDecimalString());
+    }
+
+    /**
+     * @param array<array-key, mixed> $metadata
+     */
+    private function metadataFromUncheckedArray(array $metadata): void
+    {
+        (new \ReflectionMethod(LedgerMetadata::class, 'fromArray'))->invoke(null, $metadata);
     }
 }

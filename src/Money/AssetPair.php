@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Crystal\Finance\Core\Money;
 
-use Crystal\Finance\Core\Exception\AssetMismatch;
+use Crystal\Finance\Core\Exception\InvalidAssetPair;
 
 final readonly class AssetPair
 {
@@ -13,7 +13,7 @@ final readonly class AssetPair
         private Asset $quote,
     ) {
         if ($base->equals($quote)) {
-            throw AssetMismatch::between($base->id()->value(), $quote->id()->value());
+            throw InvalidAssetPair::sameBaseAndQuote($base->id()->value());
         }
     }
 

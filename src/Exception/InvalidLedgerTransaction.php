@@ -40,4 +40,19 @@ final class InvalidLedgerTransaction extends DomainException
     {
         return new self(sprintf('Ledger transaction reference "%s" already exists.', $reference));
     }
+
+    public static function reversedTransactionCannotBeModified(string $transactionId): self
+    {
+        return new self(sprintf('Ledger transaction "%s" has reversal state and cannot be modified.', $transactionId));
+    }
+
+    public static function invalidMetadataKey(int|string $key): self
+    {
+        return new self(sprintf('Invalid ledger metadata key "%s". Metadata keys must be strings.', (string) $key));
+    }
+
+    public static function invalidMetadataValue(string $key): self
+    {
+        return new self(sprintf('Invalid ledger metadata value for key "%s". Use string, int, bool or null.', $key));
+    }
 }

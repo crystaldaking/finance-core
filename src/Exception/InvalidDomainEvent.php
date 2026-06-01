@@ -20,4 +20,14 @@ final class InvalidDomainEvent extends DomainException
     {
         return new self(sprintf('Invalid domain event aggregate id "%s".', $aggregateId));
     }
+
+    public static function invalidMetadataKey(int|string $key): self
+    {
+        return new self(sprintf('Invalid domain event metadata key "%s". Metadata keys must be strings.', (string) $key));
+    }
+
+    public static function invalidMetadataValue(string $key): self
+    {
+        return new self(sprintf('Invalid domain event metadata value for key "%s". Use string, int, bool or null.', $key));
+    }
 }

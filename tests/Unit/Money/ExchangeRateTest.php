@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Crystal\Finance\Core\Tests\Unit\Money;
 
-use Crystal\Finance\Core\Exception\AssetMismatch;
+use Crystal\Finance\Core\Exception\InvalidAssetPair;
+use Crystal\Finance\Core\Exception\InvalidExchangeConversion;
 use Crystal\Finance\Core\Exception\InvalidRate;
 use Crystal\Finance\Core\Money\AssetPair;
 use Crystal\Finance\Core\Money\AssetRegistry;
@@ -36,7 +37,7 @@ final class ExchangeRateTest extends TestCase
     {
         $eur = AssetRegistry::default()->get('EUR');
 
-        $this->expectException(AssetMismatch::class);
+        $this->expectException(InvalidAssetPair::class);
 
         AssetPair::of($eur, $eur);
     }
@@ -49,7 +50,7 @@ final class ExchangeRateTest extends TestCase
             Rate::of('1.10'),
         );
 
-        $this->expectException(AssetMismatch::class);
+        $this->expectException(InvalidExchangeConversion::class);
 
         $exchangeRate->convert(Money::of('10.00', 'USD', $registry), RoundingMode::HalfUp);
     }

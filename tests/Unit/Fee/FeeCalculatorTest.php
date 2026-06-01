@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Crystal\Finance\Core\Tests\Unit\Fee;
 
-use Crystal\Finance\Core\Exception\AssetMismatch;
 use Crystal\Finance\Core\Exception\InvalidFeeRule;
 use Crystal\Finance\Core\Fee\FeeCalculator;
 use Crystal\Finance\Core\Fee\FeeComponentType;
@@ -101,7 +100,7 @@ final class FeeCalculatorTest extends TestCase
 
     public function testCurrencyMismatchIsRejected(): void
     {
-        $this->expectException(AssetMismatch::class);
+        $this->expectException(InvalidFeeRule::class);
 
         $this->calculate(
             $this->eur('100.00'),
