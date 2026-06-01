@@ -75,6 +75,7 @@ final readonly class Money
         return $this->asset;
     }
 
+    #[\NoDiscard]
     public function plus(self $other): self
     {
         $this->assertSameAsset($other);
@@ -82,6 +83,7 @@ final readonly class Money
         return new self($this->amount->plus($other->amount)->toScale($this->asset->scale()), $this->asset);
     }
 
+    #[\NoDiscard]
     public function minus(self $other): self
     {
         $this->assertSameAsset($other);
@@ -89,21 +91,25 @@ final readonly class Money
         return new self($this->amount->minus($other->amount)->toScale($this->asset->scale()), $this->asset);
     }
 
+    #[\NoDiscard]
     public function negated(): self
     {
         return new self($this->amount->negated()->toScale($this->asset->scale()), $this->asset);
     }
 
+    #[\NoDiscard]
     public function absolute(): self
     {
         return $this->isNegative() ? $this->negated() : $this;
     }
 
+    #[\NoDiscard]
     public function multipliedBy(string $multiplier, RoundingMode $roundingMode): self
     {
         return self::fromDecimal($this->amount->multipliedBy(DecimalString::money($multiplier)), $this->asset, $roundingMode);
     }
 
+    #[\NoDiscard]
     public function percentage(Percentage $percentage, RoundingMode $roundingMode): self
     {
         return self::fromDecimal($this->amount->multipliedBy($percentage->toMultiplier()), $this->asset, $roundingMode);
@@ -150,6 +156,7 @@ final readonly class Money
      * @param list<int|string|BigInteger> $ratios
      * @return list<self>
      */
+    #[\NoDiscard]
     public function allocate(array $ratios): array
     {
         if ($ratios === []) {

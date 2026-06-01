@@ -72,6 +72,16 @@ final class AssetTest extends TestCase
         Asset::fiat('EUR', 37);
     }
 
+    public function testDuplicateRegistryAssetIsRejected(): void
+    {
+        $this->expectException(InvalidAsset::class);
+
+        AssetRegistry::of(
+            Asset::fiat('EUR', 2),
+            Asset::fiat('EUR', 2),
+        );
+    }
+
     public function testAssetIdParsesCryptoFormat(): void
     {
         $id = AssetId::fromString('USDT@TRON');

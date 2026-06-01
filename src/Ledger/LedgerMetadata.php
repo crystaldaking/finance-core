@@ -29,6 +29,7 @@ final readonly class LedgerMetadata
         return new self($values);
     }
 
+    #[\NoDiscard]
     public function with(string $key, string|int|bool|null $value): self
     {
         $values = $this->values;

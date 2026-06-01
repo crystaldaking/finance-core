@@ -22,7 +22,9 @@ $transaction = LedgerTransaction::make(
 
 (new LedgerValidator())->assertValid($transaction);
 
-$reversal = $transaction->reverse(LedgerReference::manual('transfer_123_reversal'));
+$reversalResult = $transaction->reverse(LedgerReference::manual('transfer_123_reversal'));
+$markedOriginal = $reversalResult->original();
+$reversal = $reversalResult->reversal();
 ```
 
 Accounts are opaque identifiers. The core does not infer an asset from the account id.

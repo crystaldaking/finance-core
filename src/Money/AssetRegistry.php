@@ -34,7 +34,13 @@ final readonly class AssetRegistry
         $indexed = [];
 
         foreach ($assets as $asset) {
-            $indexed[$asset->id()->value()] = $asset;
+            $assetId = $asset->id()->value();
+
+            if (isset($indexed[$assetId])) {
+                throw InvalidAsset::duplicate($assetId);
+            }
+
+            $indexed[$assetId] = $asset;
         }
 
         return new self($indexed);

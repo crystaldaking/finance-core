@@ -11,6 +11,9 @@ final readonly class Percentage
 {
     private function __construct(private BigDecimal $value)
     {
+        if ($value->isNegative()) {
+            throw InvalidPercentage::fromString($value->toString());
+        }
     }
 
     public static function of(string $value): self

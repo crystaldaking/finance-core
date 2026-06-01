@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Crystal\Finance\Core\Ledger;
 
+use Crystal\Finance\Core\Exception\InvalidLedgerTransaction;
 use Crystal\Finance\Core\Money\Money;
 
 final readonly class LedgerTransaction
@@ -39,16 +40,19 @@ final readonly class LedgerTransaction
         );
     }
 
+    #[\NoDiscard]
     public function debit(LedgerAccountId $accountId, Money $amount, ?LedgerEntryId $entryId = null): self
     {
         return $this->withEntry(LedgerEntry::debit($accountId, $amount, $entryId));
     }
 
+    #[\NoDiscard]
     public function credit(LedgerAccountId $accountId, Money $amount, ?LedgerEntryId $entryId = null): self
     {
         return $this->withEntry(LedgerEntry::credit($accountId, $amount, $entryId));
     }
 
+    #[\NoDiscard]
     public function withMetadata(LedgerMetadata $metadata): self
     {
         return new self(
@@ -62,14 +66,15 @@ final readonly class LedgerTransaction
         );
     }
 
-    public function reverse(LedgerReference $reference, ?LedgerTransactionId $id = null): self
+    #[\NoDiscard]
+    public function reverse(LedgerReference $reference, ?LedgerTransactionId $id = null): LedgerReversal
     {
         if ($this->reversalOf !== null) {
-            throw \Crystal\Finance\Core\Exception\InvalidLedgerTransaction::reversalCannotBeReversed($this->id->value());
+            throw InvalidLedgerTransaction::reversalCannotBeReversed($this->id->value());
         }
 
         if ($this->reversedBy !== null) {
-            throw \Crystal\Finance\Core\Exception\InvalidLedgerTransaction::alreadyReversed($this->id->value());
+            throw InvalidLedgerTransaction::alreadyReversed($this->id->value());
         }
 
         $entries = [];
@@ -78,7 +83,7 @@ final readonly class LedgerTransaction
             $entries[] = $entry->reversed();
         }
 
-        return new self(
+        $reversal = new self(
             $id ?? LedgerTransactionId::generate(),
             LedgerTransactionType::Reversal,
             $reference,
@@ -87,12 +92,15 @@ final readonly class LedgerTransaction
             $this->id,
             null,
         );
+
+        return new LedgerReversal($this->markReversedBy($reversal->id), $reversal);
     }
 
+    #[\NoDiscard]
     public function markReversedBy(LedgerTransactionId $reversalId): self
     {
         if ($this->reversedBy !== null) {
-            throw \Crystal\Finance\Core\Exception\InvalidLedgerTransaction::alreadyReversed($this->id->value());
+            throw InvalidLedgerTransaction::alreadyReversed($this->id->value());
         }
 
         return new self(

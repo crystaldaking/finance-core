@@ -7,6 +7,7 @@ namespace Crystal\Finance\Core\Tests\Unit\Money;
 use Crystal\Finance\Core\Exception\AssetMismatch;
 use Crystal\Finance\Core\Exception\InvalidAllocation;
 use Crystal\Finance\Core\Exception\InvalidMoneyAmount;
+use Crystal\Finance\Core\Exception\InvalidPercentage;
 use Crystal\Finance\Core\Money\AssetRegistry;
 use Crystal\Finance\Core\Money\Money;
 use Crystal\Finance\Core\Money\Percentage;
@@ -75,7 +76,7 @@ final class MoneyTest extends TestCase
     {
         $this->expectException(AssetMismatch::class);
 
-        Money::of('10.00', 'USDT@TRON', $this->registry())
+        $unused = Money::of('10.00', 'USDT@TRON', $this->registry())
             ->plus(Money::of('10.00', 'USDT@ETHEREUM', $this->registry()));
     }
 
@@ -93,6 +94,13 @@ final class MoneyTest extends TestCase
             ->percentage(Percentage::of('2.555'), RoundingMode::HalfUp);
 
         self::assertSame('2.56', $fee->toDecimalString());
+    }
+
+    public function testRejectsNegativePercentage(): void
+    {
+        $this->expectException(InvalidPercentage::class);
+
+        Percentage::of('-1');
     }
 
     public function testComparisonAndSigns(): void
@@ -126,6 +134,6 @@ final class MoneyTest extends TestCase
     {
         $this->expectException(InvalidAllocation::class);
 
-        Money::of('10.00', 'EUR', $this->registry())->allocate([1, 0]);
+        $unused = Money::of('10.00', 'EUR', $this->registry())->allocate([1, 0]);
     }
 }

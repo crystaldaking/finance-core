@@ -84,7 +84,7 @@ final class LedgerTransactionTest extends TestCase
     {
         $this->expectException(InvalidLedgerTransaction::class);
 
-        LedgerTransaction::make(
+        $unused = LedgerTransaction::make(
             LedgerTransactionType::Journal,
             LedgerReference::manual('txn_005'),
         )->debit($this->account('cash'), $this->money('0.00'));
@@ -94,7 +94,7 @@ final class LedgerTransactionTest extends TestCase
     {
         $this->expectException(InvalidLedgerTransaction::class);
 
-        LedgerTransaction::make(
+        $unused = LedgerTransaction::make(
             LedgerTransactionType::Journal,
             LedgerReference::manual('txn_006'),
         )->debit($this->account('cash'), $this->money('-1.00'));
@@ -117,13 +117,16 @@ final class LedgerTransactionTest extends TestCase
             ->debit($this->account('cash'), $this->money('25.00'))
             ->credit($this->account('equity'), $this->money('25.00'));
 
-        $reversal = $transaction->reverse(
+        $result = $transaction->reverse(
             LedgerReference::manual('txn_007_reversal'),
             LedgerTransactionId::fromString('ltx_007_reversal'),
         );
+        $reversal = $result->reversal();
+        $original = $result->original();
 
         (new LedgerValidator())->assertValid($reversal);
 
+        self::assertSame('ltx_007_reversal', $original->reversedBy()?->value());
         self::assertTrue($reversal->isReversal());
         self::assertSame('ltx_007', $reversal->reversalOf()?->value());
         self::assertSame('credit', $reversal->entries()[0]->direction()->value);
@@ -144,7 +147,23 @@ final class LedgerTransactionTest extends TestCase
 
         $this->expectException(InvalidLedgerTransaction::class);
 
-        $transaction->markReversedBy(LedgerTransactionId::fromString('ltx_008_second_reversal'));
+        $unused = $transaction->markReversedBy(LedgerTransactionId::fromString('ltx_008_second_reversal'));
+    }
+
+    public function testMarkedReversedTransactionCannotCreateAnotherReversal(): void
+    {
+        $transaction = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('txn_010'),
+            id: LedgerTransactionId::fromString('ltx_010'),
+        )
+            ->debit($this->account('cash'), $this->money('25.00'))
+            ->credit($this->account('equity'), $this->money('25.00'))
+            ->markReversedBy(LedgerTransactionId::fromString('ltx_010_reversal'));
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        $unused = $transaction->reverse(LedgerReference::manual('txn_010_second_reversal'));
     }
 
     public function testRepositoryFixtureRejectsDuplicateReferences(): void

@@ -24,6 +24,7 @@ final readonly class FeeRule
         return new self([], false);
     }
 
+    #[\NoDiscard]
     public function percent(
         Percentage $percentage,
         string $label = 'percentage_fee',
@@ -32,21 +33,25 @@ final readonly class FeeRule
         return $this->withComponent(FeeComponent::percentage($percentage, $label, $roundingMode));
     }
 
+    #[\NoDiscard]
     public function fixed(Money $amount, string $label = 'fixed_fee'): self
     {
         return $this->withComponent(FeeComponent::fixed($amount, $label));
     }
 
+    #[\NoDiscard]
     public function min(Money $amount, string $label = 'minimum_fee'): self
     {
         return $this->withComponent(FeeComponent::minimum($amount, $label));
     }
 
+    #[\NoDiscard]
     public function max(Money $amount, string $label = 'maximum_fee'): self
     {
         return $this->withComponent(FeeComponent::maximum($amount, $label));
     }
 
+    #[\NoDiscard]
     public function allowNegativeNet(): self
     {
         return new self($this->components, true);

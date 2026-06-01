@@ -20,4 +20,9 @@ final class InvalidAsset extends DomainException
     {
         return new self(sprintf('Asset "%s" is not registered.', $assetId));
     }
+
+    public static function duplicate(string $assetId): self
+    {
+        return new self(sprintf('Asset "%s" is already registered.', $assetId));
+    }
 }
