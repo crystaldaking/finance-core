@@ -18,6 +18,8 @@ $rate = ExchangeRate::of(
     Rate::of('1.0834'),
 );
 
-$converted = $rate->convert(Money::of('100.00', 'EUR', $registry), RoundingMode::HalfUp);
+$invoice = Money::of('100.00', 'EUR', $registry);
+$converted = $rate->convert($invoice, RoundingMode::HalfUp);
 
-echo '100.00 EUR -> ' . $converted->toDecimalString() . ' USD' . PHP_EOL;
+echo $invoice->toDecimalString() . ' EUR -> ' . $converted->toDecimalString() . ' USD' . PHP_EOL;
+echo 'Rate: ' . $rate->rate()->toDecimalString() . PHP_EOL;

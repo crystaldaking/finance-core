@@ -10,18 +10,19 @@ use Crystal\Finance\Core\Money\Money;
 
 $registry = AssetRegistry::default();
 
-$eur = Money::of('1250.50', 'EUR', $registry);
-$tronUsdt = Money::of('10.000000', 'USDT@TRON', $registry);
-$ethereumUsdt = Money::of('10.000000', 'USDT@ETHEREUM', $registry);
-$eth = Money::ofMinor('1123456789123456789', 'ETH@ETHEREUM', $registry);
+$invoiceTotal = Money::of('1250.50', 'EUR', $registry);
+$tronSettlement = Money::of('10.000000', 'USDT@TRON', $registry);
+$ethereumSettlement = Money::of('10.000000', 'USDT@ETHEREUM', $registry);
+$ethGasReserve = Money::ofMinor('1123456789123456789', 'ETH@ETHEREUM', $registry);
 
-echo 'EUR amount: ' . $eur->toDecimalString() . PHP_EOL;
-echo 'USDT on Tron: ' . $tronUsdt->asset()->id()->value() . PHP_EOL;
-echo 'USDT on Ethereum: ' . $ethereumUsdt->asset()->id()->value() . PHP_EOL;
-echo 'ETH from minor units: ' . $eth->toDecimalString() . PHP_EOL;
+echo 'Invoice total: ' . $invoiceTotal->toDecimalString() . ' ' . $invoiceTotal->asset()->id()->value() . PHP_EOL;
+echo 'Settlement rail A: ' . $tronSettlement->asset()->id()->value() . PHP_EOL;
+echo 'Settlement rail B: ' . $ethereumSettlement->asset()->id()->value() . PHP_EOL;
+echo 'ETH gas reserve: ' . $ethGasReserve->toDecimalString() . PHP_EOL;
+echo 'ETH gas reserve minor units: ' . $ethGasReserve->toMinorUnitString() . PHP_EOL;
 
 try {
-    $unused = $tronUsdt->plus($ethereumUsdt);
+    $unused = $tronSettlement->plus($ethereumSettlement);
 } catch (AssetMismatch $exception) {
-    echo 'Asset mismatch protected: yes' . PHP_EOL;
+    echo 'Cross-network USDT addition blocked: yes' . PHP_EOL;
 }

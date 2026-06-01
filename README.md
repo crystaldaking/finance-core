@@ -130,18 +130,20 @@ composer hardening
 
 The `examples/` directory contains executable real-life usage scenarios:
 
-- network-aware money and crypto assets
-- household allocation
+- network-aware money boundaries and high-precision crypto minor units
+- SaaS cost-center allocation with deterministic residual handling
 - corporate expense journals
-- multi-asset treasury entries
-- service fee calculation
-- platform fee ledger posting
-- reversal correction
-- idempotent command execution
-- FX conversion
-- audit context and domain events
+- multi-asset treasury ledger entries
+- invoice fee calculation with explainable breakdown lines
+- merchant collection ledger posting with audit, event, and idempotency fingerprint
+- reversal-based correction workflow
+- idempotent ledger command execution
+- FX conversion with explicit rounding
+- audit event recording for outbox-style integrations
 
-`demo/merchant-finance-flow.php` is an executable integration proof that combines money, fees, ledger posting, audit context, a domain event, and an idempotency fingerprint in one merchant finance scenario.
+`examples/06-platform-fee-ledger-posting.php` is the integration proof: it combines money, fees, ledger posting, audit context, a domain event, and an idempotency fingerprint in one merchant finance scenario.
+
+See `examples/README.md` for the full runnable scenario list.
 
 ## Release Governance
 

@@ -12,6 +12,13 @@ use Crystal\Finance\Core\Idempotency\IdempotencyScope;
 use Crystal\Finance\Core\Idempotency\IdempotencyStatus;
 use Crystal\Finance\Core\Idempotency\IdempotencyStore;
 use Crystal\Finance\Core\Idempotency\PayloadFingerprint;
+use Crystal\Finance\Core\Ledger\LedgerAccountId;
+use Crystal\Finance\Core\Ledger\LedgerReference;
+use Crystal\Finance\Core\Ledger\LedgerTransaction;
+use Crystal\Finance\Core\Ledger\LedgerTransactionType;
+use Crystal\Finance\Core\Ledger\LedgerValidator;
+use Crystal\Finance\Core\Money\AssetRegistry;
+use Crystal\Finance\Core\Money\Money;
 use Psr\Clock\ClockInterface;
 
 final class ExampleIdempotencyClock implements ClockInterface
@@ -96,10 +103,30 @@ final class ExampleIdempotencyStore implements IdempotencyStore
 
 $runner = new IdempotencyRunner(new ExampleIdempotencyStore(), new ExampleIdempotencyClock());
 $scope = IdempotencyScope::fromString('ledger:append');
-$key = IdempotencyKey::fromString('request_12345678');
-$fingerprint = PayloadFingerprint::fromArray(['reference' => 'transfer_123', 'amount' => '100.00']);
+$key = IdempotencyKey::fromString('request_invoice_12345678');
+$payload = [
+    'reference' => 'invoice_2026_0001',
+    'amount' => '100.00',
+    'asset' => 'EUR',
+];
+$fingerprint = PayloadFingerprint::fromArray($payload);
 
-$first = $runner->run($scope, $key, $fingerprint, new DateInterval('PT1H'), static fn (): string => 'posted');
+$postLedgerTransaction = static function () use ($payload): string {
+    $registry = AssetRegistry::default();
+    $amount = Money::of($payload['amount'], $payload['asset'], $registry);
+    $transaction = LedgerTransaction::make(
+        LedgerTransactionType::Transfer,
+        LedgerReference::of('invoice', $payload['reference']),
+    )
+        ->debit(LedgerAccountId::fromString('asset:bank:operating'), $amount)
+        ->credit(LedgerAccountId::fromString('income:invoices'), $amount);
+
+    (new LedgerValidator())->assertValid($transaction);
+
+    return $transaction->id()->value();
+};
+
+$first = $runner->run($scope, $key, $fingerprint, new DateInterval('PT1H'), $postLedgerTransaction);
 $second = $runner->run($scope, $key, $fingerprint, new DateInterval('PT1H'), static fn (): string => 'not-used');
 $storedResult = $second->result();
 
@@ -109,4 +136,4 @@ if (!is_string($storedResult)) {
 
 echo 'First execution replayed: ' . ($first->replayed() ? 'yes' : 'no') . PHP_EOL;
 echo 'Second execution replayed: ' . ($second->replayed() ? 'yes' : 'no') . PHP_EOL;
-echo 'Stored result: ' . $storedResult . PHP_EOL;
+echo 'Stored transaction id: ' . $storedResult . PHP_EOL;

@@ -27,11 +27,8 @@ final class ExamplesTest extends TestCase
      */
     public static function exampleFiles(): array
     {
-        $exampleFiles = glob(dirname(__DIR__, 2) . '/examples/*.php');
-        $demoFiles = glob(dirname(__DIR__, 2) . '/demo/*.php');
-        self::assertNotFalse($exampleFiles);
-        self::assertNotFalse($demoFiles);
-        $files = [...$exampleFiles, ...$demoFiles];
+        $files = glob(dirname(__DIR__, 2) . '/examples/*.php');
+        self::assertNotFalse($files);
         sort($files);
 
         return array_map(static fn (string $file): array => [$file], $files);

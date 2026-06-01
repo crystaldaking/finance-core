@@ -17,14 +17,14 @@ $registry = AssetRegistry::default();
 
 $original = LedgerTransaction::make(
     LedgerTransactionType::Adjustment,
-    LedgerReference::manual('wrong_adjustment_001'),
+    LedgerReference::of('correction', 'wrong_adjustment_001'),
     id: LedgerTransactionId::fromString('ltx_wrong_adjustment_001'),
 )
     ->debit(LedgerAccountId::fromString('asset:bank:operating'), Money::of('25.00', 'EUR', $registry))
     ->credit(LedgerAccountId::fromString('income:misc'), Money::of('25.00', 'EUR', $registry));
 
 $reversalResult = $original->reverse(
-    LedgerReference::manual('wrong_adjustment_001_reversal'),
+    LedgerReference::of('correction', 'wrong_adjustment_001_reversal'),
     LedgerTransactionId::fromString('ltx_wrong_adjustment_001_reversal'),
 );
 
@@ -35,4 +35,5 @@ $reversedBy = $markedOriginal->reversedBy() ?? throw new RuntimeException('Origi
 (new LedgerValidator())->assertValid($reversal);
 
 echo 'Original reversed by: ' . $reversedBy->value() . PHP_EOL;
+echo 'Reversal reference: ' . $reversal->reference()->value() . PHP_EOL;
 echo 'Reversal balances: yes' . PHP_EOL;

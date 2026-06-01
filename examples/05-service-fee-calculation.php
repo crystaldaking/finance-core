@@ -12,6 +12,7 @@ use Crystal\Finance\Core\Money\Money;
 use Crystal\Finance\Core\Money\Percentage;
 
 $registry = AssetRegistry::default();
+$gross = Money::of('100.00', 'EUR', $registry);
 
 $rule = FeeRule::make()
     ->percent(Percentage::of('2.5'), 'service_fee')
@@ -20,11 +21,15 @@ $rule = FeeRule::make()
     ->max(Money::of('50.00', 'EUR', $registry));
 
 $result = (new FeeCalculator())->calculate(
-    Money::of('100.00', 'EUR', $registry),
+    $gross,
     $rule,
-    FeeContext::make('invoice_collection', ['customer_id' => 'customer_123']),
+    FeeContext::make('invoice_collection', ['invoice_id' => 'invoice_2026_0001']),
 );
 
 echo 'Gross: ' . $result->gross()->toDecimalString() . PHP_EOL;
 echo 'Fee: ' . $result->totalFee()->toDecimalString() . PHP_EOL;
 echo 'Net: ' . $result->net()->toDecimalString() . PHP_EOL;
+
+foreach ($result->breakdown()->lines() as $line) {
+    echo $line->label() . ': ' . $line->amount()->toDecimalString() . PHP_EOL;
+}

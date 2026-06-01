@@ -1,6 +1,6 @@
 # Integration Proof
 
-The executable script at `demo/merchant-finance-flow.php` demonstrates the core working as a small merchant finance flow:
+The executable script at `examples/06-platform-fee-ledger-posting.php` demonstrates the core working as a small merchant finance flow:
 
 - accepts a network-aware crypto gross amount;
 - calculates a generic platform fee;
@@ -11,7 +11,7 @@ The executable script at `demo/merchant-finance-flow.php` demonstrates the core 
 Run it with:
 
 ```bash
-php demo/merchant-finance-flow.php
+php examples/06-platform-fee-ledger-posting.php
 ```
 
-The demo is intentionally storage-free. Applications provide their own repositories, locks, serialization, queues, and framework integration around these primitives.
+The example is intentionally storage-free. Applications provide their own repositories, locks, serialization, queues, and framework integration around these primitives.

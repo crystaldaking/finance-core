@@ -13,16 +13,21 @@ use Crystal\Finance\Core\Money\AssetRegistry;
 use Crystal\Finance\Core\Money\Money;
 
 $registry = AssetRegistry::default();
+$eurFloat = Money::of('500.00', 'EUR', $registry);
+$tronFloat = Money::of('250.000000', 'USDT@TRON', $registry);
 
 $transaction = LedgerTransaction::make(
     LedgerTransactionType::Journal,
-    LedgerReference::manual('treasury_reclassification_001'),
+    LedgerReference::of('treasury', 'daily_float_reclassification_001'),
 )
-    ->debit(LedgerAccountId::fromString('asset:bank:eur'), Money::of('500.00', 'EUR', $registry))
-    ->credit(LedgerAccountId::fromString('liability:treasury:eur'), Money::of('500.00', 'EUR', $registry))
-    ->debit(LedgerAccountId::fromString('asset:wallet:tron'), Money::of('250.000000', 'USDT@TRON', $registry))
-    ->credit(LedgerAccountId::fromString('liability:treasury:usdt_tron'), Money::of('250.000000', 'USDT@TRON', $registry));
+    ->debit(LedgerAccountId::fromString('asset:bank:eur'), $eurFloat)
+    ->credit(LedgerAccountId::fromString('liability:treasury:eur_float'), $eurFloat)
+    ->debit(LedgerAccountId::fromString('asset:wallet:tron'), $tronFloat)
+    ->credit(LedgerAccountId::fromString('liability:treasury:usdt_tron_float'), $tronFloat);
 
 (new LedgerValidator())->assertValid($transaction);
 
-echo 'Multi-asset transaction balances independently per asset.' . PHP_EOL;
+echo 'Reference: ' . $transaction->reference()->value() . PHP_EOL;
+echo 'EUR float: ' . $eurFloat->toDecimalString() . PHP_EOL;
+echo 'USDT float: ' . $tronFloat->toDecimalString() . PHP_EOL;
+echo 'Balances per asset: yes' . PHP_EOL;

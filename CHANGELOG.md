@@ -14,7 +14,7 @@ The project follows Semantic Versioning after `v1.0.0`.
 - Double-entry ledger primitives with transaction validation, per-asset balancing, opaque account ids, metadata, references, and explicit reversals.
 - Generic fee engine with percentage, fixed, minimum, maximum, net, gross, total fee, and explainable breakdown lines.
 - Audit context, domain event, event recording, idempotency key, payload fingerprint, idempotency record, and idempotency runner primitives.
-- Ten executable examples plus an executable merchant finance demo.
+- Ten executable real-world examples, including an end-to-end merchant finance flow.
 - CI, Dependabot, issue templates, pull request template, coverage gate, mutation testing configuration, and release checklist.
 
 ### Security

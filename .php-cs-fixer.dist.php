@@ -10,7 +10,6 @@ $finder = Finder::create()
         __DIR__ . '/src',
         __DIR__ . '/tests',
         __DIR__ . '/examples',
-        __DIR__ . '/demo',
         __DIR__ . '/tools',
     ]);
 
