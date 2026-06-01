@@ -12,7 +12,7 @@ final readonly class Actor
         private ActorType $type,
         private string $id,
     ) {
-        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:@-]{1,127}$/', $id) !== 1) {
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$/', $id) !== 1) {
             throw InvalidAuditContext::invalidIdentifier($id);
         }
     }

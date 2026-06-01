@@ -13,6 +13,6 @@ final class InvalidPayloadFingerprint extends DomainException
 
     public static function unsupportedPayload(): self
     {
-        return new self('Payload fingerprint can only be created from JSON-compatible arrays.');
+        return new self('Payload fingerprint can only be created from canonical payload arrays containing strings, integers, booleans, null, and nested arrays.');
     }
 }

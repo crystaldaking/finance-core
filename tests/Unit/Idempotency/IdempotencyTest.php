@@ -7,6 +7,7 @@ namespace Crystal\Finance\Core\Tests\Unit\Idempotency;
 use Crystal\Finance\Core\Exception\IdempotencyConflict;
 use Crystal\Finance\Core\Exception\InvalidIdempotencyKey;
 use Crystal\Finance\Core\Exception\InvalidIdempotencyScope;
+use Crystal\Finance\Core\Exception\InvalidPayloadFingerprint;
 use Crystal\Finance\Core\Idempotency\IdempotencyKey;
 use Crystal\Finance\Core\Idempotency\IdempotencyRunner;
 use Crystal\Finance\Core\Idempotency\IdempotencyScope;
@@ -50,6 +51,13 @@ final class IdempotencyTest extends TestCase
         $second = PayloadFingerprint::fromArray(['amount' => '100.01']);
 
         self::assertFalse($first->equals($second));
+    }
+
+    public function testFingerprintRejectsFloatingPointPayloadValues(): void
+    {
+        $this->expectException(InvalidPayloadFingerprint::class);
+
+        PayloadFingerprint::fromArray(['amount' => 10.25]);
     }
 
     public function testInvalidKeyIsRejected(): void

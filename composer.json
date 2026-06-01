@@ -3,6 +3,27 @@
     "description": "Framework-agnostic PHP financial core for money, assets, ledgering, fees, audit, events and idempotency.",
     "type": "library",
     "license": "Apache-2.0",
+    "homepage": "https://github.com/crystaldaking/finance-core",
+    "keywords": [
+        "accounting",
+        "audit",
+        "decimal",
+        "finance",
+        "fintech",
+        "idempotency",
+        "ledger",
+        "money",
+        "php-sdk"
+    ],
+    "authors": [
+        {
+            "name": "crystaldaking"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/crystaldaking/finance-core/issues",
+        "source": "https://github.com/crystaldaking/finance-core"
+    },
     "require": {
         "php": "^8.5",
         "brick/math": "^0.17",
@@ -42,10 +63,6 @@
         ]
     },
     "config": {
-        "allow-plugins": {
-            "phpstan/extension-installer": true
-        },
         "sort-packages": true
-    },
-    "minimum-stability": "stable"
+    }
 }

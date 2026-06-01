@@ -22,7 +22,7 @@ final readonly class AuditContext
         private ?RequestId $requestId,
         private array $metadata,
     ) {
-        if ($reason === '') {
+        if (trim($reason) === '') {
             throw InvalidAuditContext::emptyReason();
         }
     }

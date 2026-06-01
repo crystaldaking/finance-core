@@ -15,4 +15,9 @@ final class InvalidDomainEvent extends DomainException
     {
         return new self(sprintf('Invalid domain event name "%s".', $eventName));
     }
+
+    public static function invalidAggregateId(string $aggregateId): self
+    {
+        return new self(sprintf('Invalid domain event aggregate id "%s".', $aggregateId));
+    }
 }

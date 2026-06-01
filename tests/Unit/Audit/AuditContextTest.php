@@ -7,6 +7,7 @@ namespace Crystal\Finance\Core\Tests\Unit\Audit;
 use Crystal\Finance\Core\Audit\Actor;
 use Crystal\Finance\Core\Audit\ActorType;
 use Crystal\Finance\Core\Audit\AuditContext;
+use Crystal\Finance\Core\Audit\CorrelationId;
 use Crystal\Finance\Core\Exception\InvalidAuditContext;
 use Crystal\Finance\Core\Tests\Fixtures\FixedClock;
 use DateTimeImmutable;
@@ -45,5 +46,25 @@ final class AuditContextTest extends TestCase
         $this->expectException(InvalidAuditContext::class);
 
         AuditContext::record(Actor::system(), '', new DateTimeImmutable('2026-01-01T00:00:00+00:00'));
+    }
+
+    public function testRejectsWhitespaceOnlyReason(): void
+    {
+        $this->expectException(InvalidAuditContext::class);
+
+        AuditContext::record(Actor::system(), '   ', new DateTimeImmutable('2026-01-01T00:00:00+00:00'));
+    }
+
+    public function testShortIdentifiersAreAllowedForDeveloperExperience(): void
+    {
+        $context = AuditContext::record(
+            Actor::of(ActorType::User, '1'),
+            'User action',
+            new DateTimeImmutable('2026-01-01T00:00:00+00:00'),
+            correlationId: CorrelationId::fromString('1'),
+        );
+
+        self::assertSame('1', $context->actor()->id());
+        self::assertSame('1', $context->correlationId()?->value());
     }
 }

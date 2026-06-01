@@ -9,6 +9,7 @@ use Crystal\Finance\Core\Exception\InvalidLedgerTransaction;
 use Crystal\Finance\Core\Exception\UnbalancedLedgerTransaction;
 use Crystal\Finance\Core\Ledger\Ledger;
 use Crystal\Finance\Core\Ledger\LedgerAccountId;
+use Crystal\Finance\Core\Ledger\LedgerEntryId;
 use Crystal\Finance\Core\Ledger\LedgerReference;
 use Crystal\Finance\Core\Ledger\LedgerTransaction;
 use Crystal\Finance\Core\Ledger\LedgerTransactionId;
@@ -34,6 +35,23 @@ final class LedgerTransactionTest extends TestCase
         (new LedgerValidator())->assertValid($transaction);
 
         self::assertCount(2, $transaction->entries());
+    }
+
+    public function testShortIdentifiersAreAllowedForDeveloperExperience(): void
+    {
+        $transaction = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('1'),
+            id: LedgerTransactionId::fromString('1'),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'), LedgerEntryId::fromString('1'))
+            ->credit($this->account('equity'), $this->money('1.00'), LedgerEntryId::fromString('2'));
+
+        (new LedgerValidator())->assertValid($transaction);
+
+        self::assertSame('manual:1', $transaction->reference()->value());
+        self::assertSame('1', $transaction->id()->value());
+        self::assertSame('1', $transaction->entries()[0]->id()->value());
     }
 
     public function testUnbalancedTransactionIsRejected(): void
@@ -164,6 +182,18 @@ final class LedgerTransactionTest extends TestCase
         $this->expectException(InvalidLedgerTransaction::class);
 
         $unused = $transaction->reverse(LedgerReference::manual('txn_010_second_reversal'));
+    }
+
+    public function testEmptyTransactionCannotBeReversed(): void
+    {
+        $transaction = LedgerTransaction::make(
+            LedgerTransactionType::Journal,
+            LedgerReference::manual('txn_011'),
+        );
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        $unused = $transaction->reverse(LedgerReference::manual('txn_011_reversal'));
     }
 
     public function testRepositoryFixtureRejectsDuplicateReferences(): void

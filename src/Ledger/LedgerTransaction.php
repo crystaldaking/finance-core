@@ -69,6 +69,10 @@ final readonly class LedgerTransaction
     #[\NoDiscard]
     public function reverse(LedgerReference $reference, ?LedgerTransactionId $id = null): LedgerReversal
     {
+        if ($this->entries === []) {
+            throw InvalidLedgerTransaction::empty();
+        }
+
         if ($this->reversalOf !== null) {
             throw InvalidLedgerTransaction::reversalCannotBeReversed($this->id->value());
         }

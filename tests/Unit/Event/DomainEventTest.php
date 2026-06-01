@@ -9,6 +9,7 @@ use Crystal\Finance\Core\Event\EventId;
 use Crystal\Finance\Core\Event\EventMetadata;
 use Crystal\Finance\Core\Event\GenericDomainEvent;
 use Crystal\Finance\Core\Event\RecordsEvents;
+use Crystal\Finance\Core\Exception\InvalidDomainEvent;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
@@ -28,6 +29,30 @@ final class DomainEventTest extends TestCase
         self::assertSame('Ledger.TransactionPosted', $event->eventName());
         self::assertSame('ltx_123', $event->aggregateId());
         self::assertSame(['balanced' => true], $event->metadata()->toArray());
+    }
+
+    public function testShortAggregateAndEventIdsAreAllowed(): void
+    {
+        $event = GenericDomainEvent::record(
+            'Ledger.TransactionPosted',
+            '1',
+            new DateTimeImmutable('2026-01-01T00:00:00+00:00'),
+            eventId: EventId::fromString('1'),
+        );
+
+        self::assertSame('1', $event->eventId()->value());
+        self::assertSame('1', $event->aggregateId());
+    }
+
+    public function testEmptyAggregateIdIsRejected(): void
+    {
+        $this->expectException(InvalidDomainEvent::class);
+
+        GenericDomainEvent::record(
+            'Ledger.TransactionPosted',
+            '',
+            new DateTimeImmutable('2026-01-01T00:00:00+00:00'),
+        );
     }
 
     public function testRecordsEventsReleasesAndClearsEvents(): void
