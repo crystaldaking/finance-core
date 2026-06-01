@@ -2,6 +2,7 @@
 /.php-cs-fixer.cache
 /.phpstan.result-cache
 /.psalm/
+/.idea/
 /build/
 /coverage/
 /vendor/

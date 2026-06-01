@@ -6,7 +6,7 @@ namespace Crystal\Finance\Core;
 
 final readonly class CoreVersion
 {
-    public const string VERSION = '0.3.0';
+    public const string VERSION = '0.4.0';
 
     private function __construct()
     {
