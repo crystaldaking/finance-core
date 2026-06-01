@@ -33,7 +33,7 @@
         "friendsofphp/php-cs-fixer": "^3.95",
         "infection/infection": "^0.33",
         "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^12.2",
+        "phpunit/phpunit": "^12.2 || ^13.0",
         "vimeo/psalm": "^6.16.1"
     },
     "autoload": {
