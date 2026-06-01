@@ -24,26 +24,32 @@ function main(array $arguments): int
         return 2;
     }
 
-    $xml = simplexml_load_file($cloverPath);
+    $document = new DOMDocument();
 
-    if ($xml === false) {
+    if ($document->load($cloverPath) === false) {
         fwrite(STDERR, sprintf("Unable to parse coverage file: %s\n", $cloverPath));
 
         return 2;
     }
 
-    $metrics = $xml->xpath('/coverage/project/metrics');
+    $metricNodes = (new DOMXPath($document))->query('/coverage/project/metrics');
 
-    if (!is_array($metrics) || $metrics === []) {
+    if ($metricNodes === false || $metricNodes->length === 0) {
         fwrite(STDERR, "Coverage metrics not found.\n");
 
         return 2;
     }
 
-    $metric = $metrics[0];
-    $attributes = $metric->attributes();
-    $coveredStatements = (int) ($attributes['coveredstatements'] ?? 0);
-    $statements = (int) ($attributes['statements'] ?? 0);
+    $metricNode = $metricNodes->item(0);
+
+    if (!$metricNode instanceof DOMElement) {
+        fwrite(STDERR, "Coverage metrics node is invalid.\n");
+
+        return 2;
+    }
+
+    $coveredStatements = (int) $metricNode->getAttribute('coveredstatements');
+    $statements = (int) $metricNode->getAttribute('statements');
     $coverage = $statements === 0 ? 0.0 : ((float) $coveredStatements / (float) $statements) * 100.0;
 
     printf("Line coverage: %.2f%% (minimum %.2f%%)\n", $coverage, $minimum);
