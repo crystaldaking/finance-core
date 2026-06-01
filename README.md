@@ -119,3 +119,18 @@ composer qa
 ```
 
 The QA suite validates Composer metadata, coding style, PHPStan max level, Psalm strict analysis, PHPUnit unit tests, and architecture boundaries.
+
+## Examples
+
+The `examples/` directory contains executable real-life usage scenarios:
+
+- network-aware money and crypto assets
+- household allocation
+- corporate expense journals
+- multi-asset treasury entries
+- service fee calculation
+- platform fee ledger posting
+- reversal correction
+- idempotent command execution
+- FX conversion
+- audit context and domain events
