@@ -26,7 +26,7 @@
     },
     "require": {
         "php": "^8.5",
-        "brick/math": "^0.17",
+        "brick/math": "^0.17 || ^0.18",
         "psr/clock": "^1.0"
     },
     "require-dev": {
