@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Crystal\Finance\Core\Idempotency;
 
 use Crystal\Finance\Core\Exception\IdempotencyConflict;
+use Crystal\Finance\Core\Exception\InvalidIdempotencyTtl;
 use DateInterval;
+use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
 use Throwable;
 
@@ -28,9 +30,11 @@ final readonly class IdempotencyRunner
         DateInterval $ttl,
         callable $callback,
     ): IdempotencyResult {
+        $now = $this->clock->now();
+        $leaseExpiresAt = self::expiresAfter($now, $ttl);
         $existing = $this->store->find($scope, $key);
 
-        if ($existing !== null && !$existing->isExpired($this->clock->now())) {
+        if ($existing !== null && !$existing->isExpired($now)) {
             if (!$existing->fingerprint()->equals($fingerprint)) {
                 throw IdempotencyConflict::fingerprintMismatch($scope->value(), $key->value());
             }
@@ -42,7 +46,7 @@ final readonly class IdempotencyRunner
             throw IdempotencyConflict::alreadyStarted($scope->value(), $key->value());
         }
 
-        $record = $this->store->begin($scope, $key, $fingerprint, $this->clock->now()->add($ttl));
+        $record = $this->store->begin($scope, $key, $fingerprint, $leaseExpiresAt);
 
         try {
             $result = $callback();
@@ -52,6 +56,20 @@ final readonly class IdempotencyRunner
             throw $throwable;
         }
 
-        return IdempotencyResult::fresh($this->store->complete($record, $result));
+        $replayExpiresAt = self::expiresAfter($this->clock->now(), $ttl);
+        $completed = $this->store->complete($record->withExpiresAt($replayExpiresAt), $result);
+
+        return IdempotencyResult::fresh($completed);
+    }
+
+    private static function expiresAfter(DateTimeImmutable $now, DateInterval $ttl): DateTimeImmutable
+    {
+        $expiresAt = $now->add($ttl);
+
+        if ($expiresAt <= $now) {
+            throw InvalidIdempotencyTtl::nonPositive();
+        }
+
+        return $expiresAt;
     }
 }

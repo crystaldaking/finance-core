@@ -11,6 +11,8 @@ use Crystal\Finance\Core\Ledger\Ledger;
 use Crystal\Finance\Core\Ledger\LedgerAccountId;
 use Crystal\Finance\Core\Ledger\LedgerEntryId;
 use Crystal\Finance\Core\Ledger\LedgerReference;
+use Crystal\Finance\Core\Ledger\LedgerRepository;
+use Crystal\Finance\Core\Ledger\LedgerReversal;
 use Crystal\Finance\Core\Ledger\LedgerTransaction;
 use Crystal\Finance\Core\Ledger\LedgerTransactionId;
 use Crystal\Finance\Core\Ledger\LedgerTransactionType;
@@ -232,6 +234,201 @@ final class LedgerTransactionTest extends TestCase
         $unused = $transaction->reverse(LedgerReference::manual('txn_011_reversal'));
     }
 
+    public function testReversalTypeCannotBeCreatedDirectly(): void
+    {
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        LedgerTransaction::make(
+            LedgerTransactionType::Reversal,
+            LedgerReference::manual('invalid_direct_reversal'),
+        );
+    }
+
+    public function testReversalCannotUseOrdinaryAppendPath(): void
+    {
+        $repository = $this->plainRepository();
+        $ledger = new Ledger($repository);
+        $original = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('atomic_original'),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'));
+
+        $reversal = $original->reverse(LedgerReference::manual('atomic_reversal'));
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        $ledger->append($reversal->reversal());
+    }
+
+    public function testLedgerAppendAlwaysValidatesTheTransaction(): void
+    {
+        $transaction = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('invalid_ledger_append'),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('2.00'));
+
+        $this->expectException(UnbalancedLedgerTransaction::class);
+
+        (new Ledger($this->plainRepository()))->append($transaction);
+    }
+
+    public function testAtomicReversalUpdatesStoredOriginalAndPreventsSecondReversal(): void
+    {
+        $repository = new InMemoryLedgerRepository();
+        $ledger = new Ledger($repository);
+        $originalReference = LedgerReference::manual('persisted_original');
+        $reversalReference = LedgerReference::manual('persisted_reversal');
+        $original = LedgerTransaction::make(LedgerTransactionType::Transfer, $originalReference)
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'));
+
+        $ledger->append($original);
+        $ledger->appendReversal($original->reverse($reversalReference));
+
+        $storedOriginal = $repository->findByReference($originalReference);
+        $storedReversal = $repository->findByReference($reversalReference);
+
+        self::assertNotNull($storedOriginal);
+        self::assertNotNull($storedReversal);
+        $reversedBy = $storedOriginal->reversedBy();
+        $reversalOf = $storedReversal->reversalOf();
+        self::assertNotNull($reversedBy);
+        self::assertNotNull($reversalOf);
+        self::assertTrue($storedReversal->id()->equals($reversedBy));
+        self::assertTrue($storedOriginal->id()->equals($reversalOf));
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        $unused = $storedOriginal->reverse(LedgerReference::manual('persisted_second_reversal'));
+    }
+
+    public function testAtomicRepositoryRejectsAStaleSecondReversal(): void
+    {
+        $repository = new InMemoryLedgerRepository();
+        $ledger = new Ledger($repository);
+        $original = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('stale_original'),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'));
+        $first = $original->reverse(LedgerReference::manual('stale_reversal_1'));
+        $second = $original->reverse(LedgerReference::manual('stale_reversal_2'));
+
+        $ledger->append($original);
+        $ledger->appendReversal($first);
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        $ledger->appendReversal($second);
+    }
+
+    public function testAtomicReversalRequiresCapableRepository(): void
+    {
+        $repository = $this->plainRepository();
+        $original = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('unsupported_repository_original'),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'));
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        (new Ledger($repository))->appendReversal(
+            $original->reverse(LedgerReference::manual('unsupported_repository_reversal')),
+        );
+    }
+
+    public function testAtomicReversalValidatesTheOriginalTransaction(): void
+    {
+        $repository = new InMemoryLedgerRepository();
+        $original = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('unbalanced_reversal_original'),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('2.00'));
+
+        $this->expectException(UnbalancedLedgerTransaction::class);
+
+        (new Ledger($repository))->appendReversal(
+            $original->reverse(LedgerReference::manual('unbalanced_reversal')),
+        );
+    }
+
+    public function testLedgerReversalRejectsMismatchedOriginalId(): void
+    {
+        $result = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('pair_original_1'),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'))
+            ->reverse(LedgerReference::manual('pair_reversal_1'));
+        $differentOriginal = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('pair_original_2'),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'))
+            ->markReversedBy($result->reversal()->id());
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        new LedgerReversal($differentOriginal, $result->reversal());
+    }
+
+    public function testLedgerReversalRejectsMismatchedReversedById(): void
+    {
+        $result = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('pair_reversed_by_original'),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'))
+            ->reverse(LedgerReference::manual('pair_reversed_by_reversal'));
+        $originalWithWrongMarker = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('pair_reversed_by_replacement'),
+            id: $result->original()->id(),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'))
+            ->markReversedBy(LedgerTransactionId::fromString('different_reversal'));
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        new LedgerReversal($originalWithWrongMarker, $result->reversal());
+    }
+
+    public function testLedgerReversalRejectsEntriesThatDoNotOffsetOriginal(): void
+    {
+        $result = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('pair_entries_original'),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'))
+            ->reverse(LedgerReference::manual('pair_entries_reversal'));
+        $originalWithDifferentEntries = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('pair_entries_replacement'),
+            id: $result->original()->id(),
+        )
+            ->debit($this->account('cash'), $this->money('2.00'))
+            ->credit($this->account('equity'), $this->money('2.00'))
+            ->markReversedBy($result->reversal()->id());
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        new LedgerReversal($originalWithDifferentEntries, $result->reversal());
+    }
+
     public function testRepositoryFixtureRejectsDuplicateReferences(): void
     {
         $repository = new InMemoryLedgerRepository();
@@ -263,5 +460,27 @@ final class LedgerTransactionTest extends TestCase
     private function account(string $leaf): LedgerAccountId
     {
         return LedgerAccountId::fromString('test:' . $leaf);
+    }
+
+    private function plainRepository(): LedgerRepository
+    {
+        return new class () implements LedgerRepository {
+            #[\Override]
+            public function append(LedgerTransaction $transaction): void
+            {
+            }
+
+            #[\Override]
+            public function findByReference(LedgerReference $reference): ?LedgerTransaction
+            {
+                return null;
+            }
+
+            #[\Override]
+            public function existsByReference(LedgerReference $reference): bool
+            {
+                return false;
+            }
+        };
     }
 }

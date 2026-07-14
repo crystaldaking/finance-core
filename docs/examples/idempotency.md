@@ -16,4 +16,4 @@ $fingerprint = PayloadFingerprint::fromArray([
 ]);
 ```
 
-The store interface requires atomic begin semantics. Redis, SQL, and framework cache implementations belong outside this package.
+The store interface requires atomic begin semantics. TTLs must be positive. The initial TTL is a processing lease and should exceed the maximum expected callback duration; after completion, the runner starts a fresh replay-retention window of the same length. Store implementations must preserve and compare `IdempotencyRecord::claimId()` during `complete()` and `fail()` so a stale attempt cannot overwrite a newer claim. Redis, SQL, and framework cache implementations belong outside this package.

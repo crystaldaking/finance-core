@@ -26,3 +26,4 @@ $result = (new FeeCalculator())->calculate(
 ```
 
 Maximum caps are represented in the breakdown as a negative adjustment line so the sum of lines still explains the final total fee.
+Custom minimum and maximum labels are preserved on their adjustment lines. Gross amounts must be zero or positive; credits and rebates should be modeled explicitly instead of passing a negative gross value.

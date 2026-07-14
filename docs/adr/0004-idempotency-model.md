@@ -10,6 +10,8 @@ The core provides idempotency keys, scopes, canonical payload fingerprints, reco
 
 Expired records are claimable again. A concrete store may hide expired records from `find()` or atomically replace them during `begin()`.
 
+TTLs must resolve to a positive duration. The initial expiry acts as the processing lease and must cover the expected callback runtime. After successful completion, the runner refreshes expiry so the full replay-retention TTL starts when the callback finishes. Each attempt has a unique `claimId`; stores must compare it and atomically reject stale completion or failure attempts when a newer claim already exists.
+
 ## Consequences
 
 Redis, SQL, and framework cache implementations live outside the core.

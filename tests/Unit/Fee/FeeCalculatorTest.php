@@ -71,6 +71,25 @@ final class FeeCalculatorTest extends TestCase
         self::assertSame('minimum_fee_adjustment', $result->breakdown()->lines()[1]->label());
     }
 
+    public function testMinimumAndMaximumAdjustmentLabelsCanBeCustomized(): void
+    {
+        $minimum = $this->calculate(
+            $this->eur('10.00'),
+            FeeRule::make()
+                ->percent(Percentage::of('1'))
+                ->min($this->eur('1.00'), 'contractual_minimum'),
+        );
+        $maximum = $this->calculate(
+            $this->eur('1000.00'),
+            FeeRule::make()
+                ->percent(Percentage::of('10'))
+                ->max($this->eur('50.00'), 'contractual_maximum'),
+        );
+
+        self::assertSame('contractual_minimum', $minimum->breakdown()->lines()[1]->label());
+        self::assertSame('contractual_maximum', $maximum->breakdown()->lines()[1]->label());
+    }
+
     public function testMaximumFeeAddsNegativeAdjustmentLine(): void
     {
         $result = $this->calculate(
@@ -126,6 +145,18 @@ final class FeeCalculatorTest extends TestCase
         );
 
         self::assertSame('-1.00', $result->net()->toDecimalString());
+    }
+
+    public function testNegativeGrossIsRejectedEvenWhenNegativeNetIsAllowed(): void
+    {
+        $this->expectException(InvalidFeeRule::class);
+
+        $this->calculate(
+            $this->eur('-100.00'),
+            FeeRule::make()
+                ->percent(Percentage::of('1'))
+                ->allowNegativeNet(),
+        );
     }
 
     public function testRoundingBehaviorIsExplicit(): void

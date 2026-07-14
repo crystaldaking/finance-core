@@ -4,6 +4,7 @@ Ledger transactions contain positive debit and credit entries and must balance p
 
 ```php
 use Crystal\Finance\Core\Ledger\LedgerAccountId;
+use Crystal\Finance\Core\Ledger\Ledger;
 use Crystal\Finance\Core\Ledger\LedgerReference;
 use Crystal\Finance\Core\Ledger\LedgerTransaction;
 use Crystal\Finance\Core\Ledger\LedgerTransactionType;
@@ -22,9 +23,12 @@ $transaction = LedgerTransaction::make(
 
 (new LedgerValidator())->assertValid($transaction);
 
+// Given an application adapter that implements LedgerReversalRepository:
+$ledger = new Ledger($repository);
+$ledger->append($transaction);
+
 $reversalResult = $transaction->reverse(LedgerReference::manual('transfer_123_reversal'));
-$markedOriginal = $reversalResult->original();
-$reversal = $reversalResult->reversal();
+$ledger->appendReversal($reversalResult);
 ```
 
-Accounts are opaque identifiers. The core does not infer an asset from the account id.
+Accounts are opaque identifiers. The core does not infer an asset from the account id. A reversal must not be passed to ordinary `Ledger::append()` because the original marker and reversal entry require one atomic persistence operation.

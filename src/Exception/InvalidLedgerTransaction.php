@@ -46,6 +46,26 @@ final class InvalidLedgerTransaction extends DomainException
         return new self(sprintf('Ledger transaction "%s" has reversal state and cannot be modified.', $transactionId));
     }
 
+    public static function reversalMustBeCreatedFromOriginal(): self
+    {
+        return new self('Ledger reversal transactions must be created by reversing an existing transaction.');
+    }
+
+    public static function reversalRequiresAtomicPersistence(): self
+    {
+        return new self('Ledger reversals must be persisted atomically with their marked original transaction.');
+    }
+
+    public static function invalidReversalState(string $transactionId): self
+    {
+        return new self(sprintf('Ledger transaction "%s" has inconsistent reversal type and state.', $transactionId));
+    }
+
+    public static function invalidReversalPair(): self
+    {
+        return new self('Ledger reversal does not match its original transaction.');
+    }
+
     public static function invalidMetadataKey(int|string $key): self
     {
         return new self(sprintf('Invalid ledger metadata key "%s". Metadata keys must be strings.', (string) $key));

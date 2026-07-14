@@ -30,4 +30,9 @@ final class InvalidFeeRule extends DomainException
     {
         return new self(sprintf('Fee "%s" cannot exceed gross amount "%s" unless negative net is explicitly allowed.', $fee, $gross));
     }
+
+    public static function negativeGross(string $gross): self
+    {
+        return new self(sprintf('Fee gross amount cannot be negative, got "%s".', $gross));
+    }
 }

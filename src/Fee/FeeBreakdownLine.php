@@ -20,14 +20,14 @@ final readonly class FeeBreakdownLine
         return new self($label, $type, $amount);
     }
 
-    public static function minimumAdjustment(Money $amount): self
+    public static function minimumAdjustment(Money $amount, string $label = 'minimum_fee_adjustment'): self
     {
-        return new self('minimum_fee_adjustment', FeeComponentType::Minimum, $amount);
+        return new self($label, FeeComponentType::Minimum, $amount);
     }
 
-    public static function maximumAdjustment(Money $amount): self
+    public static function maximumAdjustment(Money $amount, string $label = 'maximum_fee_adjustment'): self
     {
-        return new self('maximum_fee_adjustment', FeeComponentType::Maximum, $amount);
+        return new self($label, FeeComponentType::Maximum, $amount);
     }
 
     public function label(): string

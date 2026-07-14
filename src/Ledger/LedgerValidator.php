@@ -12,6 +12,13 @@ final readonly class LedgerValidator
 {
     public function assertValid(LedgerTransaction $transaction): void
     {
+        $hasReversalType = $transaction->type() === LedgerTransactionType::Reversal;
+        $hasReversalOrigin = $transaction->reversalOf() !== null;
+
+        if ($hasReversalType !== $hasReversalOrigin) {
+            throw InvalidLedgerTransaction::invalidReversalState($transaction->id()->value());
+        }
+
         $entries = $transaction->entries();
 
         if ($entries === []) {
@@ -45,6 +52,5 @@ final readonly class LedgerValidator
                 );
             }
         }
-
     }
 }

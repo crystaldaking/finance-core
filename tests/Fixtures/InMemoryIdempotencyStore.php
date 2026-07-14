@@ -42,11 +42,11 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
         $recordKey = $this->recordKey($scope, $key);
         $existing = $this->records[$recordKey] ?? null;
 
-        if ($existing !== null && !$this->isExpired($existing) && !$existing->fingerprint()->equals($fingerprint)) {
-            throw IdempotencyConflict::fingerprintMismatch($scope->value(), $key->value());
-        }
+        if ($existing !== null && !$this->isExpired($existing)) {
+            if (!$existing->fingerprint()->equals($fingerprint)) {
+                throw IdempotencyConflict::fingerprintMismatch($scope->value(), $key->value());
+            }
 
-        if ($existing !== null && !$this->isExpired($existing) && $existing->status() === IdempotencyStatus::Started) {
             throw IdempotencyConflict::alreadyStarted($scope->value(), $key->value());
         }
 
@@ -59,6 +59,8 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
     #[\Override]
     public function complete(IdempotencyRecord $record, mixed $result): IdempotencyRecord
     {
+        $this->assertActiveClaim($record);
+
         $completed = new IdempotencyRecord(
             $record->scope(),
             $record->key(),
@@ -66,6 +68,7 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
             IdempotencyStatus::Completed,
             $record->expiresAt(),
             $result,
+            claimId: $record->claimId(),
         );
         $this->records[$this->recordKey($record->scope(), $record->key())] = $completed;
 
@@ -75,6 +78,8 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
     #[\Override]
     public function fail(IdempotencyRecord $record, Throwable $throwable): IdempotencyRecord
     {
+        $this->assertActiveClaim($record);
+
         $failed = new IdempotencyRecord(
             $record->scope(),
             $record->key(),
@@ -83,6 +88,7 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
             $record->expiresAt(),
             null,
             $throwable::class,
+            $record->claimId(),
         );
         $this->records[$this->recordKey($record->scope(), $record->key())] = $failed;
 
@@ -97,5 +103,17 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
     private function isExpired(IdempotencyRecord $record): bool
     {
         return $this->clock !== null && $record->isExpired($this->clock->now());
+    }
+
+    private function assertActiveClaim(IdempotencyRecord $record): void
+    {
+        $current = $this->records[$this->recordKey($record->scope(), $record->key())] ?? null;
+
+        if ($current === null
+            || $current->status() !== IdempotencyStatus::Started
+            || !hash_equals($current->claimId(), $record->claimId())
+        ) {
+            throw IdempotencyConflict::staleClaim($record->scope()->value(), $record->key()->value());
+        }
     }
 }

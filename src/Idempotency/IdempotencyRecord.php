@@ -8,6 +8,8 @@ use DateTimeImmutable;
 
 final readonly class IdempotencyRecord
 {
+    private string $claimId;
+
     public function __construct(
         private IdempotencyScope $scope,
         private IdempotencyKey $key,
@@ -16,7 +18,9 @@ final readonly class IdempotencyRecord
         private DateTimeImmutable $expiresAt,
         private mixed $result = null,
         private ?string $failureClass = null,
+        ?string $claimId = null,
     ) {
+        $this->claimId = $claimId ?? 'idc_' . bin2hex(random_bytes(16));
     }
 
     public function scope(): IdempotencyScope
@@ -54,8 +58,27 @@ final readonly class IdempotencyRecord
         return $this->failureClass;
     }
 
+    public function claimId(): string
+    {
+        return $this->claimId;
+    }
+
     public function isExpired(DateTimeImmutable $now): bool
     {
         return $this->expiresAt <= $now || $this->status === IdempotencyStatus::Expired;
+    }
+
+    public function withExpiresAt(DateTimeImmutable $expiresAt): self
+    {
+        return new self(
+            $this->scope,
+            $this->key,
+            $this->fingerprint,
+            $this->status,
+            $expiresAt,
+            $this->result,
+            $this->failureClass,
+            $this->claimId,
+        );
     }
 }

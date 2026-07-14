@@ -15,4 +15,9 @@ final class IdempotencyConflict extends DomainException
     {
         return new self(sprintf('Idempotency key "%s" in scope "%s" is already started.', $key, $scope));
     }
+
+    public static function staleClaim(string $scope, string $key): self
+    {
+        return new self(sprintf('Idempotency claim for key "%s" in scope "%s" is no longer active.', $key, $scope));
+    }
 }

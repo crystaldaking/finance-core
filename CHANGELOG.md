@@ -4,6 +4,31 @@ All notable changes to `crystaldaking/finance-core` are documented here.
 
 The project follows Semantic Versioning after `v1.0.0`.
 
+## [Unreleased]
+
+## [1.1.0] - 2026-07-15
+
+### Added
+
+- Add `LedgerReversalRepository` and `Ledger::appendReversal()` as the atomic persistence boundary for an original transaction and its reversal.
+- Add immutable idempotency claim ids so store adapters can fence stale processing attempts.
+
+### Changed
+
+- Start completed idempotency replay retention when the callback finishes rather than when processing begins.
+- Update the idempotency example to reclaim expired records in accordance with the store contract.
+
+### Fixed
+
+- Require ledger reversals to be created from an original transaction, validate both sides of the pair, and reject direct construction of reversal transactions.
+- Reject non-positive idempotency TTLs.
+- Preserve custom minimum and maximum fee labels in adjustment breakdown lines.
+- Reject negative gross amounts in fee calculations.
+
+### Security
+
+- Prevent stale idempotency workers from completing or failing a newer claim for the same key.
+
 ## [1.0.1] - 2026-06-01
 
 ### Fixed

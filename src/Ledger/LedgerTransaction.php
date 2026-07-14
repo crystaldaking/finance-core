@@ -29,6 +29,10 @@ final readonly class LedgerTransaction
         ?LedgerMetadata $metadata = null,
         ?LedgerTransactionId $id = null,
     ): self {
+        if ($type === LedgerTransactionType::Reversal) {
+            throw InvalidLedgerTransaction::reversalMustBeCreatedFromOriginal();
+        }
+
         return new self(
             $id ?? LedgerTransactionId::generate(),
             $type,
@@ -164,7 +168,7 @@ final readonly class LedgerTransaction
 
     public function isReversal(): bool
     {
-        return $this->reversalOf !== null;
+        return $this->type === LedgerTransactionType::Reversal && $this->reversalOf !== null;
     }
 
     private function withEntry(LedgerEntry $entry): self

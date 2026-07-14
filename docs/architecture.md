@@ -13,6 +13,7 @@ Crystal Finance Core is a pure PHP domain package. The package exposes financial
 - Financial values are represented by decimal strings and `brick/math` types.
 - Assets are identified by `AssetId`; crypto assets include an explicit network.
 - Ledger transactions are append-only domain facts and must balance per asset.
+- Ledger reversals use a dedicated repository contract so marking the original and appending the reversal happen atomically.
 - Idempotency is expressed through value objects and storage interfaces; concrete stores live outside this package.
 - Domain events are recorded and released, never dispatched by the core.
 

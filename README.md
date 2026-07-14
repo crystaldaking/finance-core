@@ -94,6 +94,8 @@ $transaction = LedgerTransaction::make(
 (new LedgerValidator())->assertValid($transaction);
 ```
 
+Reversals are created with `LedgerTransaction::reverse()` and persisted with `Ledger::appendReversal()` through a `LedgerReversalRepository`. This keeps marking the original and appending its single reversal atomic.
+
 ## Idempotency
 
 ```php
@@ -111,6 +113,7 @@ $fingerprint = PayloadFingerprint::fromArray([
 ```
 
 Concrete Redis, SQL, cache, and lock implementations live outside this package.
+Idempotency TTLs must be positive. The replay-retention window starts when the callback completes; the initial processing lease should cover the maximum expected callback duration. Store adapters compare record claim ids to fence stale completion and failure attempts.
 
 ## Quality
 

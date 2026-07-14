@@ -24,7 +24,16 @@ interface IdempotencyStore
         DateTimeImmutable $expiresAt,
     ): IdempotencyRecord;
 
+    /**
+     * Atomically complete the active claim represented by the record.
+     *
+     * The runner refreshes expiresAt before this call so it represents replay retention.
+     * Implementations must compare claimId and not overwrite a newer claim for the same scope and key.
+     */
     public function complete(IdempotencyRecord $record, mixed $result): IdempotencyRecord;
 
+    /**
+     * Atomically fail the active claim after comparing claimId, without overwriting a newer claim.
+     */
     public function fail(IdempotencyRecord $record, Throwable $throwable): IdempotencyRecord;
 }
