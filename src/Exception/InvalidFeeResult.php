@@ -6,6 +6,16 @@ namespace Crystal\Finance\Core\Exception;
 
 final class InvalidFeeResult extends DomainException
 {
+    public static function emptyBreakdownLabel(): self
+    {
+        return new self('Fee breakdown label must not be blank.');
+    }
+
+    public static function negativeAmount(string $part, string $amount): self
+    {
+        return new self(sprintf('Fee result %s cannot be negative, got "%s".', $part, $amount));
+    }
+
     public static function invalidBreakdownLines(): self
     {
         return new self('Fee breakdown lines must be a list of FeeBreakdownLine instances.');

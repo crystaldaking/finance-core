@@ -1,0 +1,4 @@
+Product cost center: 1240.00
+Operations cost center: 744.00
+Data cost center: 496.00
+Allocated total: 2480.00

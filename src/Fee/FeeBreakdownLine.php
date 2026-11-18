@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Crystal\Finance\Core\Fee;
 
+use Crystal\Finance\Core\Exception\InvalidFeeResult;
 use Crystal\Finance\Core\Money\Money;
 
 final readonly class FeeBreakdownLine
@@ -13,6 +14,9 @@ final readonly class FeeBreakdownLine
         private FeeComponentType $type,
         private Money $amount,
     ) {
+        if (trim($label) === '') {
+            throw InvalidFeeResult::emptyBreakdownLabel();
+        }
     }
 
     public static function component(string $label, FeeComponentType $type, Money $amount): self

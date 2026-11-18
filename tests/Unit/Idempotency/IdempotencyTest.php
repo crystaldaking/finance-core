@@ -54,6 +54,35 @@ final class IdempotencyTest extends TestCase
         self::assertFalse($first->equals($second));
     }
 
+    public function testFingerprintSortsNumericStringsByBytesAndCanReplayLegacyHash(): void
+    {
+        $legacy = PayloadFingerprint::fromString(
+            'sha256:' . hash('sha256', '{"map":{"1e0":"second","01":"first"}}'),
+        );
+        $request = PayloadFingerprint::fromArray(['map' => ['1e0' => 'second', '01' => 'first']]);
+        $reordered = PayloadFingerprint::fromArray(['map' => ['01' => 'first', '1e0' => 'second']]);
+        self::assertSame($reordered->value(), $request->value());
+        self::assertNotSame($legacy->value(), $request->value());
+
+        $scope = IdempotencyScope::fromString('ledger:append');
+        $key = IdempotencyKey::fromString('legacy-replay');
+        $ttl = new DateInterval('PT1M');
+        $runner = $this->runner();
+        $fresh = $runner->run($scope, $key, $legacy, $ttl, static fn (): string => 'saved');
+        $replay = $runner->run($scope, $key, $request, $ttl, self::failingCallback(...));
+
+        self::assertFalse($fresh->replayed());
+        self::assertTrue($replay->replayed());
+        self::assertSame('saved', $replay->result());
+    }
+
+    public function testFingerprintRejectsInvalidUtf8(): void
+    {
+        $this->expectException(InvalidPayloadFingerprint::class);
+
+        PayloadFingerprint::fromArray(['memo' => "\xFF"]);
+    }
+
     public function testFingerprintCanBeCreatedFromString(): void
     {
         $fingerprint = PayloadFingerprint::fromString('sha256:' . str_repeat('a', 64));
@@ -129,6 +158,77 @@ final class IdempotencyTest extends TestCase
             new DateInterval('PT1H'),
             static fn (): string => 'not-used',
         );
+    }
+
+    public function testStoreSeparatesScopesAndKeysContainingColons(): void
+    {
+        $runner = $this->runner();
+        $ttl = new DateInterval('PT1M');
+        $fingerprint = PayloadFingerprint::fromArray(['quantity' => 1]);
+
+        $first = $runner->run(
+            IdempotencyScope::fromString('ledger:post'),
+            IdempotencyKey::fromString('request01'),
+            $fingerprint,
+            $ttl,
+            static fn (): string => 'first',
+        );
+        $second = $runner->run(
+            IdempotencyScope::fromString('ledger'),
+            IdempotencyKey::fromString('post:request01'),
+            $fingerprint,
+            $ttl,
+            static fn (): string => 'second',
+        );
+
+        self::assertSame('first', $first->result());
+        self::assertSame('second', $second->result());
+        self::assertFalse($second->replayed());
+    }
+
+    public function testCompletionFailureLeavesTheClaimUntilItsLeaseExpires(): void
+    {
+        $now = new DateTimeImmutable('2026-01-01T00:00:00Z');
+        $clock = new FixedClock($now);
+        $store = new InMemoryIdempotencyStore($clock);
+        $runner = new IdempotencyRunner($store, $clock);
+        $scope = IdempotencyScope::fromString('ledger:append');
+        $key = IdempotencyKey::fromString('failed-write');
+        $fingerprint = PayloadFingerprint::fromArray(['quantity' => 1]);
+        $ttl = new DateInterval('PT2S');
+        $store->completionFailure = new RuntimeException('write failed before commit');
+        $calls = 0;
+        $callback = static function () use (&$calls): int {
+            return ++$calls;
+        };
+
+        try {
+            $runner->run($scope, $key, $fingerprint, $ttl, $callback);
+            self::fail('The completion error must be visible to the caller.');
+        } catch (RuntimeException $failure) {
+            self::assertSame($store->completionFailure, $failure);
+        }
+
+        $started = $store->find($scope, $key);
+        self::assertNotNull($started);
+        self::assertSame(IdempotencyStatus::Started, $started->status());
+        self::assertTrue($started->isExpired($now->add($ttl)));
+        $store->completionFailure = null;
+        $clock->moveTo($now->modify('+1 second'));
+
+        try {
+            $runner->run($scope, $key, $fingerprint, $ttl, $callback);
+            self::fail('An active claim must block the retry.');
+        } catch (IdempotencyConflict $failure) {
+            self::assertStringContainsString('already started', $failure->getMessage());
+            self::assertSame(1, $calls);
+        }
+
+        $clock->moveTo($now->add($ttl));
+        $result = $runner->run($scope, $key, $fingerprint, $ttl, $callback);
+
+        self::assertSame(2, $result->result());
+        self::assertNotSame($started->claimId(), $result->record()->claimId());
     }
 
     public function testFailedCallbackStoresFailedStatusAndRethrows(): void

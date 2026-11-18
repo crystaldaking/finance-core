@@ -14,7 +14,7 @@ final readonly class IdempotencyKey
 
     public static function fromString(string $value): self
     {
-        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/', $value) !== 1) {
+        if (preg_match('/\A[A-Za-z0-9][A-Za-z0-9._:-]{7,127}\z/', $value) !== 1) {
             throw InvalidIdempotencyKey::fromString($value);
         }
 

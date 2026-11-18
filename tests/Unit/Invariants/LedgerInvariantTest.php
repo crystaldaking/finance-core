@@ -33,7 +33,6 @@ final class LedgerInvariantTest extends TestCase
     public function testOneMinorUnitMutationBreaksPerAssetBalance(): void
     {
         $positiveAmounts = $this->positiveAmounts();
-        $rejections = 0;
 
         foreach ($positiveAmounts as [$assetId, $minorUnits]) {
             $amount = Money::ofMinor($minorUnits, $assetId, $this->registry());
@@ -48,12 +47,11 @@ final class LedgerInvariantTest extends TestCase
             try {
                 (new LedgerValidator())->assertValid($transaction);
                 self::fail('Expected unbalanced transaction for ' . $assetId);
-            } catch (UnbalancedLedgerTransaction) {
-                $rejections++;
+            } catch (UnbalancedLedgerTransaction $exception) {
+                self::assertStringContainsString($assetId, $exception->getMessage());
             }
         }
 
-        self::assertSame(count($positiveAmounts), $rejections);
     }
 
     public function testReversalBalancesAndOffsetsEveryOriginalAccountEntry(): void

@@ -6,6 +6,16 @@ namespace Crystal\Finance\Core\Exception;
 
 final class InvalidFeeRule extends DomainException
 {
+    public static function emptyLabel(): self
+    {
+        return new self('Fee component label must not be blank.');
+    }
+
+    public static function duplicateBound(string $bound): self
+    {
+        return new self(sprintf('Fee rule can have only one %s.', $bound));
+    }
+
     public static function negativeComponent(string $label): self
     {
         return new self(sprintf('Fee component "%s" cannot be negative.', $label));

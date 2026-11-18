@@ -15,6 +15,7 @@ use Crystal\Finance\Core\Idempotency\PayloadFingerprint;
 use Crystal\Finance\Core\Ledger\LedgerAccountId;
 use Crystal\Finance\Core\Ledger\LedgerReference;
 use Crystal\Finance\Core\Ledger\LedgerTransaction;
+use Crystal\Finance\Core\Ledger\LedgerTransactionId;
 use Crystal\Finance\Core\Ledger\LedgerTransactionType;
 use Crystal\Finance\Core\Ledger\LedgerValidator;
 use Crystal\Finance\Core\Money\AssetRegistry;
@@ -58,7 +59,7 @@ final class ExampleIdempotencyStore implements IdempotencyStore
         $existing = $this->records[$recordKey] ?? null;
 
         if ($existing !== null && !$existing->isExpired($this->clock->now())) {
-            if (!$existing->fingerprint()->equals($fingerprint)) {
+            if (!$fingerprint->matchesStored($existing->fingerprint())) {
                 throw IdempotencyConflict::fingerprintMismatch($scope->value(), $key->value());
             }
 
@@ -112,7 +113,7 @@ final class ExampleIdempotencyStore implements IdempotencyStore
 
     private function recordKey(IdempotencyScope $scope, IdempotencyKey $key): string
     {
-        return $scope->value() . ':' . $key->value();
+        return strlen($scope->value()) . ':' . $scope->value() . $key->value();
     }
 
     private function assertActiveClaim(IdempotencyRecord $record): void
@@ -145,6 +146,7 @@ $postLedgerTransaction = static function () use ($payload): string {
     $transaction = LedgerTransaction::make(
         LedgerTransactionType::Transfer,
         LedgerReference::of('invoice', $payload['reference']),
+        id: LedgerTransactionId::fromString('ltx_' . $payload['reference']),
     )
         ->debit(LedgerAccountId::fromString('asset:bank:operating'), $amount)
         ->credit(LedgerAccountId::fromString('income:invoices'), $amount);

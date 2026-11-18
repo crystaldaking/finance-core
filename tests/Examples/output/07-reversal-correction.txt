@@ -1,0 +1,3 @@
+Original reversed by: ltx_wrong_adjustment_001_reversal
+Reversal reference: correction:wrong_adjustment_001_reversal
+Reversal balances: yes

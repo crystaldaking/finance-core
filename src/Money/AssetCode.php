@@ -14,7 +14,7 @@ final readonly class AssetCode
 
     public static function fromString(string $value): self
     {
-        if (preg_match('/^[A-Z0-9]{2,12}$/', $value) !== 1) {
+        if (preg_match('/\A[A-Z0-9]{2,12}\z/', $value) !== 1) {
             throw InvalidAssetCode::fromString($value);
         }
 

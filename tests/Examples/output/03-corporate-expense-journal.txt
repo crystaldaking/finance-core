@@ -1,0 +1,3 @@
+Expense reference: expense:office_supplies_2026_0001
+Expense amount: 84.25
+Journal entries: 2

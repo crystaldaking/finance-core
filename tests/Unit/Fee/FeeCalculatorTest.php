@@ -198,6 +198,49 @@ final class FeeCalculatorTest extends TestCase
         );
     }
 
+    public function testDuplicateMinimumIsRejected(): void
+    {
+        $this->expectException(InvalidFeeRule::class);
+        $this->expectExceptionMessageMatches('/only one minimum/');
+
+        $this->calculate($this->eur('10'), FeeRule::make()->min($this->eur('1'))->min($this->eur('2')));
+    }
+
+    public function testDuplicateMaximumIsRejected(): void
+    {
+        $this->expectException(InvalidFeeRule::class);
+        $this->expectExceptionMessageMatches('/only one maximum/');
+
+        $this->calculate($this->eur('10'), FeeRule::make()->max($this->eur('1'))->max($this->eur('2')));
+    }
+
+    public function testIdenticalFeeBoundsDoNotAddZeroAdjustmentLines(): void
+    {
+        $fee = $this->eur('1');
+        $result = $this->calculate(
+            $fee,
+            FeeRule::make()->fixed($fee)->min($fee)->max($fee),
+        );
+
+        self::assertSame('1.00', $result->totalFee()->toDecimalString());
+        self::assertSame('0.00', $result->net()->toDecimalString());
+        self::assertCount(1, $result->breakdown()->lines());
+    }
+
+    public function testRejectsNegativeFixedFee(): void
+    {
+        $this->expectException(InvalidFeeRule::class);
+
+        $unused = FeeRule::make()->fixed($this->eur('-1'));
+    }
+
+    public function testRejectsBlankComponentLabel(): void
+    {
+        $this->expectException(InvalidFeeRule::class);
+
+        $unused = FeeRule::make()->fixed($this->eur('1'), '');
+    }
+
     private function calculate(Money $amount, FeeRule $rule): \Crystal\Finance\Core\Fee\FeeResult
     {
         return (new FeeCalculator())->calculate(

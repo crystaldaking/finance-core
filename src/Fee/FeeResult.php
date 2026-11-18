@@ -21,6 +21,14 @@ final readonly class FeeResult
 
     public function __construct(Money $gross, Money $totalFee, Money $net, FeeBreakdown $breakdown, FeeContext $context)
     {
+        if ($gross->isNegative()) {
+            throw InvalidFeeResult::negativeAmount('gross', $gross->toDecimalString());
+        }
+
+        if ($totalFee->isNegative()) {
+            throw InvalidFeeResult::negativeAmount('total fee', $totalFee->toDecimalString());
+        }
+
         $expectedNet = $gross->minus($totalFee);
 
         if ($expectedNet->compareTo($net) !== 0) {

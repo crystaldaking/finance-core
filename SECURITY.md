@@ -1,5 +1,5 @@
 # Security Policy
 
-Please report security issues privately to the maintainers before public disclosure.
+Report suspected vulnerabilities through [GitHub private vulnerability reporting](https://github.com/crystaldaking/finance-core/security/advisories/new). Include the affected version, the smallest example that reproduces the issue, and the impact on financial data or integration behavior. Remove production data and credentials before submitting.
 
-This package contains financial domain primitives only. It does not provide storage, authentication, authorization, network clients, or payment provider integrations.
+Security fixes are shipped on the latest stable release in the 1.x series. Maintainers triage reports privately and coordinate disclosure and remediation with the reporter.

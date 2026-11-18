@@ -13,6 +13,7 @@ use Crystal\Finance\Core\Ledger\LedgerReference;
 use Crystal\Finance\Core\Ledger\LedgerTransactionId;
 use Crystal\Finance\Core\Money\AssetRegistry;
 use Crystal\Finance\Core\Money\Money;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 final class LedgerValueObjectTest extends TestCase
@@ -90,10 +91,14 @@ final class LedgerValueObjectTest extends TestCase
     {
         $accountId = LedgerAccountId::fromString('asset:cash');
         $money = Money::of('12.34', 'EUR', AssetRegistry::default());
-        $balance = new LedgerBalance($accountId, $money);
+        $asOf = new DateTimeImmutable('2026-01-01T00:00:00Z');
+        $balance = new LedgerBalance($accountId, $money, $asOf);
 
         self::assertTrue($accountId->equals($balance->accountId()));
+        self::assertSame('asset:cash', (string) $balance->accountId());
         self::assertSame('12.34', $balance->balance()->toDecimalString());
+        self::assertSame($asOf, $balance->asOf());
+        self::assertNull((new LedgerBalance($accountId, $money))->asOf());
     }
 
     /**

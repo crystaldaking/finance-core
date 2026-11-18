@@ -1,0 +1,6 @@
+Invoice total: 1250.50 EUR
+Settlement rail A: USDT@TRON
+Settlement rail B: USDT@ETHEREUM
+ETH gas reserve: 1.123456789123456789
+ETH gas reserve minor units: 1123456789123456789
+Cross-network USDT addition blocked: yes

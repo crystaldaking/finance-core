@@ -18,7 +18,7 @@ final readonly class Ledger
     {
         $this->validator->assertValid($transaction);
 
-        if ($transaction->isReversal()) {
+        if ($transaction->isReversal() || $transaction->reversedBy() !== null) {
             throw InvalidLedgerTransaction::reversalRequiresAtomicPersistence();
         }
 

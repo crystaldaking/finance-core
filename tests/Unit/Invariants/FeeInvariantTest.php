@@ -57,18 +57,15 @@ final class FeeInvariantTest extends TestCase
     public function testNetCannotBecomeNegativeUnlessExplicitlyAllowed(): void
     {
         $amounts = ['0.01', '1.00', '10.00'];
-        $rejections = 0;
 
         foreach ($amounts as $amount) {
             try {
                 $this->calculate($this->eur($amount), FeeRule::make()->fixed($this->eur('10.01')));
                 self::fail('Expected negative net rejection for ' . $amount);
-            } catch (InvalidFeeRule) {
-                $rejections++;
+            } catch (InvalidFeeRule $exception) {
+                self::assertStringContainsString('negative net', $exception->getMessage());
             }
         }
-
-        self::assertSame(count($amounts), $rejections);
 
         $allowed = $this->calculate(
             $this->eur('1.00'),

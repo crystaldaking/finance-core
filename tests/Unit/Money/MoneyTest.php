@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Crystal\Finance\Core\Tests\Unit\Money;
 
+use Brick\Math\Exception\RoundingNecessaryException;
 use Crystal\Finance\Core\Exception\AssetMismatch;
 use Crystal\Finance\Core\Exception\InvalidAllocation;
 use Crystal\Finance\Core\Exception\InvalidMoneyAmount;
@@ -13,6 +14,7 @@ use Crystal\Finance\Core\Money\AssetRegistry;
 use Crystal\Finance\Core\Money\Money;
 use Crystal\Finance\Core\Money\Percentage;
 use Crystal\Finance\Core\Money\RoundingMode;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class MoneyTest extends TestCase
@@ -24,7 +26,7 @@ final class MoneyTest extends TestCase
 
     public function testCreatesFiatMoney(): void
     {
-        $money = Money::of('100.25', 'EUR', $this->registry());
+        $money = Money::of('100.25', 'EUR');
 
         self::assertSame('100.25', $money->toDecimalString());
         self::assertSame('10025', $money->toMinorUnitString());
@@ -97,6 +99,20 @@ final class MoneyTest extends TestCase
             ->plus(Money::of('1.230', Asset::fiat('EUR', 3)));
     }
 
+    public function testSubtractionRejectsDifferentAssets(): void
+    {
+        $this->expectException(AssetMismatch::class);
+
+        $unused = Money::of('1', 'EUR')->minus(Money::of('1', 'USD'));
+    }
+
+    public function testComparisonRejectsDifferentAssets(): void
+    {
+        $this->expectException(AssetMismatch::class);
+
+        $unused = Money::of('1', 'EUR')->compareTo(Money::of('1', 'USD'));
+    }
+
     public function testChecksAssetIdentityExplicitly(): void
     {
         self::assertTrue(Money::of('1.00', 'EUR', $this->registry())->isSameAsset(
@@ -124,10 +140,41 @@ final class MoneyTest extends TestCase
 
     public function testCalculatesPercentageWithExplicitRounding(): void
     {
+        $percentage = Percentage::of('2.555');
+        self::assertSame('2.555', $percentage->toDecimalString());
         $fee = Money::of('100.00', 'EUR', $this->registry())
-            ->percentage(Percentage::of('2.555'), RoundingMode::HalfUp);
+            ->percentage($percentage, RoundingMode::HalfUp);
 
         self::assertSame('2.56', $fee->toDecimalString());
+    }
+
+    #[DataProvider('roundedHalves')]
+    public function testRoundsSignedAmountsExplicitly(RoundingMode $mode, string $positive, string $negative): void
+    {
+        self::assertSame($positive, Money::of('1.01', 'EUR')->multipliedBy('0.5', $mode)->toDecimalString());
+        self::assertSame($negative, Money::of('-1.01', 'EUR')->multipliedBy('0.5', $mode)->toDecimalString());
+    }
+
+    /** @return iterable<string, array{RoundingMode, string, string}> */
+    public static function roundedHalves(): iterable
+    {
+        yield 'up' => [RoundingMode::Up, '0.51', '-0.51'];
+        yield 'down' => [RoundingMode::Down, '0.50', '-0.50'];
+        yield 'ceiling' => [RoundingMode::Ceiling, '0.51', '-0.50'];
+        yield 'floor' => [RoundingMode::Floor, '0.50', '-0.51'];
+        yield 'half up' => [RoundingMode::HalfUp, '0.51', '-0.51'];
+        yield 'half down' => [RoundingMode::HalfDown, '0.50', '-0.50'];
+        yield 'half ceiling' => [RoundingMode::HalfCeiling, '0.51', '-0.50'];
+        yield 'half floor' => [RoundingMode::HalfFloor, '0.50', '-0.51'];
+        yield 'half even' => [RoundingMode::HalfEven, '0.50', '-0.50'];
+    }
+
+    public function testUnnecessaryRoundingRejectsAnInexactResult(): void
+    {
+        self::assertSame('0.50', Money::of('1', 'EUR')->multipliedBy('0.5', RoundingMode::Unnecessary)->toDecimalString());
+        $this->expectException(RoundingNecessaryException::class);
+
+        $unused = Money::of('1.01', 'EUR')->multipliedBy('0.5', RoundingMode::Unnecessary);
     }
 
     public function testRejectsNegativePercentage(): void
@@ -169,6 +216,28 @@ final class MoneyTest extends TestCase
         $this->expectException(InvalidAllocation::class);
 
         $unused = Money::of('10.00', 'EUR', $this->registry())->allocate([1, 0]);
+    }
+
+    public function testAllocationRejectsNegativeStringRatio(): void
+    {
+        $this->expectException(InvalidAllocation::class);
+
+        $unused = Money::of('10', 'EUR')->allocate(['1', '-1']);
+    }
+
+    #[DataProvider('unsupportedRatios')]
+    public function testAllocationRejectsRatiosOfUnsupportedTypes(mixed $ratio): void
+    {
+        $this->expectException(InvalidAllocation::class);
+
+        (new \ReflectionMethod(Money::class, 'allocate'))->invoke(Money::of('10', 'EUR'), [$ratio]);
+    }
+
+    /** @return iterable<string, array{bool|float}> */
+    public static function unsupportedRatios(): iterable
+    {
+        yield 'boolean' => [true];
+        yield 'decimal' => [1.0];
     }
 
     public function testAllocationRejectsEmptyRatios(): void

@@ -17,8 +17,9 @@ function main(array $arguments): int
 
     $cloverPath = $arguments[1];
     $minimum = (float) $arguments[2];
+    $localFile = resolveLocalFile($cloverPath);
 
-    if (!is_file($cloverPath)) {
+    if ($localFile === false) {
         fwrite(STDERR, sprintf("Coverage file not found: %s\n", $cloverPath));
 
         return 2;
@@ -26,13 +27,14 @@ function main(array $arguments): int
 
     $document = new DOMDocument();
 
-    if ($document->load($cloverPath) === false) {
+    if ($document->load($localFile, LIBXML_NONET) === false) {
         fwrite(STDERR, sprintf("Unable to parse coverage file: %s\n", $cloverPath));
 
         return 2;
     }
 
-    $metricNodes = (new DOMXPath($document))->query('/coverage/project/metrics');
+    $xpath = new DOMXPath($document);
+    $metricNodes = $xpath->query('/coverage/project/metrics');
 
     if ($metricNodes === false || $metricNodes->length === 0) {
         fwrite(STDERR, "Coverage metrics not found.\n");
@@ -48,13 +50,66 @@ function main(array $arguments): int
         return 2;
     }
 
-    $coveredStatements = (int) $metricNode->getAttribute('coveredstatements');
-    $statements = (int) $metricNode->getAttribute('statements');
-    $coverage = $statements === 0 ? 0.0 : ((float) $coveredStatements / (float) $statements) * 100.0;
+    $passed = reportLineCoverage(
+        'Overall',
+        (int) $metricNode->getAttribute('coveredstatements'),
+        (int) $metricNode->getAttribute('statements'),
+        $minimum,
+    );
 
-    printf("Line coverage: %.2f%% (minimum %.2f%%)\n", $coverage, $minimum);
+    $packages = $document->getElementsByTagName('package');
+    for ($index = 0; $index < $packages->length; $index++) {
+        $package = $packages->item($index);
+        if (!$package instanceof DOMElement) {
+            continue;
+        }
 
-    return $coverage >= $minimum ? 0 : 1;
+        $files = $xpath->query('file/metrics', $package);
+        if ($files === false || $files->length === 0) {
+            fwrite(STDERR, "Namespace coverage metrics not found.\n");
+
+            return 2;
+        }
+
+        $covered = 0;
+        $total = 0;
+        for ($fileIndex = 0; $fileIndex < $files->length; $fileIndex++) {
+            $metrics = $files->item($fileIndex);
+            if ($metrics instanceof DOMElement) {
+                $covered += (int) $metrics->getAttribute('coveredstatements');
+                $total += (int) $metrics->getAttribute('statements');
+            }
+        }
+
+        if ($total > 0 && !reportLineCoverage($package->getAttribute('name'), $covered, $total, $minimum)) {
+            $passed = false;
+        }
+    }
+
+    return $passed ? 0 : 1;
+}
+
+function reportLineCoverage(string $scope, int $covered, int $total, float $minimum): bool
+{
+    $coverage = $total === 0 ? 0.0 : ((float) $covered / (float) $total) * 100.0;
+    printf("%s line coverage: %.2f%% (minimum %.2f%%)\n", $scope, $coverage, $minimum);
+
+    return $coverage >= $minimum;
+}
+
+/**
+ * Accept an existing local file selected by the CLI operator.
+ *
+ * @psalm-taint-escape file
+ * @psalm-taint-escape ssrf
+ * @psalm-taint-escape url_component
+ * @psalm-taint-escape url_path
+ */
+function resolveLocalFile(string $path): string|false
+{
+    $localFile = realpath($path);
+
+    return $localFile !== false && is_file($localFile) ? $localFile : false;
 }
 
 /**

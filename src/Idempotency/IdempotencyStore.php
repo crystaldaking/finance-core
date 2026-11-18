@@ -16,6 +16,7 @@ interface IdempotencyStore
      *
      * Expired records are claimable again. A store may either hide expired records from find()
      * or atomically replace them during begin().
+     * Scope and key form a composite identity. Use matchesStored() when comparing fingerprints.
      */
     public function begin(
         IdempotencyScope $scope,

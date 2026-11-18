@@ -1,0 +1,5 @@
+Gross: 100.00
+Fee: 2.80
+Net: 97.20
+service_fee: 2.50
+fixed_charge: 0.30

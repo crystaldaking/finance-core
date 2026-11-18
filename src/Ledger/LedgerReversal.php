@@ -20,6 +20,8 @@ final readonly class LedgerReversal
             || !$reversalOf->equals($original->id())
             || $reversedBy === null
             || !$reversedBy->equals($reversal->id())
+            || $original->id()->equals($reversal->id())
+            || $original->reference()->equals($reversal->reference())
             || !self::entriesAreOpposite($original, $reversal)
         ) {
             throw InvalidLedgerTransaction::invalidReversalPair();

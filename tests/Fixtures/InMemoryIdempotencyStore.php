@@ -22,6 +22,8 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
      */
     private array $records = [];
 
+    public ?Throwable $completionFailure = null;
+
     public function __construct(private ?ClockInterface $clock = null)
     {
     }
@@ -43,7 +45,7 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
         $existing = $this->records[$recordKey] ?? null;
 
         if ($existing !== null && !$this->isExpired($existing)) {
-            if (!$existing->fingerprint()->equals($fingerprint)) {
+            if (!$fingerprint->matchesStored($existing->fingerprint())) {
                 throw IdempotencyConflict::fingerprintMismatch($scope->value(), $key->value());
             }
 
@@ -60,6 +62,10 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
     public function complete(IdempotencyRecord $record, mixed $result): IdempotencyRecord
     {
         $this->assertActiveClaim($record);
+
+        if ($this->completionFailure !== null) {
+            throw $this->completionFailure;
+        }
 
         $completed = new IdempotencyRecord(
             $record->scope(),
@@ -97,7 +103,7 @@ final class InMemoryIdempotencyStore implements IdempotencyStore
 
     private function recordKey(IdempotencyScope $scope, IdempotencyKey $key): string
     {
-        return $scope->value() . ':' . $key->value();
+        return strlen($scope->value()) . ':' . $scope->value() . $key->value();
     }
 
     private function isExpired(IdempotencyRecord $record): bool

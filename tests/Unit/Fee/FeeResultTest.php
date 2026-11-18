@@ -16,6 +16,32 @@ use PHPUnit\Framework\TestCase;
 
 final class FeeResultTest extends TestCase
 {
+    public function testRejectsNegativeGrossEvenWithConsistentNet(): void
+    {
+        $this->expectException(InvalidFeeResult::class);
+
+        FeeResult::of(Money::of('-1', 'EUR'), Money::zero('EUR'), FeeBreakdown::of(), FeeContext::make('test'));
+    }
+
+    public function testRejectsNegativeTotalFeeEvenIfItMatchesTheBreakdown(): void
+    {
+        $fee = Money::of('-1', 'EUR');
+        $this->expectException(InvalidFeeResult::class);
+
+        FeeResult::of(
+            Money::of('10', 'EUR'),
+            $fee,
+            FeeBreakdown::of(FeeBreakdownLine::component('discount', FeeComponentType::Fixed, $fee)),
+            FeeContext::make('test'),
+        );
+    }
+
+    public function testRejectsBlankBreakdownLabel(): void
+    {
+        $this->expectException(InvalidFeeResult::class);
+
+        FeeBreakdownLine::component(' ', FeeComponentType::Fixed, Money::of('1', 'EUR'));
+    }
     public function testDerivesNetFromGrossAndTotalFee(): void
     {
         $result = FeeResult::of(

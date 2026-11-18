@@ -34,6 +34,13 @@ final class FeeContextTest extends TestCase
         $this->makeContextWithUncheckedMetadata([0 => 'import']);
     }
 
+    public function testRejectsBlankOperation(): void
+    {
+        $this->expectException(InvalidFeeContext::class);
+
+        FeeContext::make(" \t");
+    }
+
     public function testRejectsUnsupportedMetadataValue(): void
     {
         $this->expectException(InvalidFeeContext::class);

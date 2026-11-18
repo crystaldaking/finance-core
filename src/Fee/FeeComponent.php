@@ -18,7 +18,9 @@ final readonly class FeeComponent
         private ?Money $amount,
         private RoundingMode $roundingMode,
     ) {
-        $percentage?->assertNonNegative();
+        if (trim($label) === '') {
+            throw InvalidFeeRule::emptyLabel();
+        }
 
         if ($amount !== null && $amount->isNegative()) {
             throw InvalidFeeRule::negativeComponent($label);

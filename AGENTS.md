@@ -6,5 +6,7 @@ This repository is a framework-agnostic PHP financial core.
 - Never use `float` for financial calculations.
 - Prefer immutable value objects and explicit invariants.
 - Run `composer qa` before committing release milestones.
+- Run `composer coverage`, `composer mutation`, and `composer audit` before tagging a release.
+- Use `\A` and `\z` for whole-string validation.
 - Payment provider adapters, webhooks, Laravel integration, reports, taxes, and persistence adapters are out of scope for `finance-core` v1.
 - Before adding a public type, decide whether it belongs in generic finance-core or future payments-core.
