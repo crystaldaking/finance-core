@@ -6,6 +6,7 @@ namespace Crystal\Finance\Core\Ledger;
 
 use Crystal\Finance\Core\Exception\InvalidLedgerTransaction;
 use Crystal\Finance\Core\Money\Money;
+use DateTimeImmutable;
 
 final readonly class LedgerTransaction
 {
@@ -20,6 +21,7 @@ final readonly class LedgerTransaction
         private array $entries,
         private ?LedgerTransactionId $reversalOf,
         private ?LedgerTransactionId $reversedBy,
+        private ?DateTimeImmutable $occurredAt,
     ) {
     }
 
@@ -28,6 +30,7 @@ final readonly class LedgerTransaction
         LedgerReference $reference,
         ?LedgerMetadata $metadata = null,
         ?LedgerTransactionId $id = null,
+        ?DateTimeImmutable $occurredAt = null,
     ): self {
         if ($type === LedgerTransactionType::Reversal) {
             throw InvalidLedgerTransaction::reversalMustBeCreatedFromOriginal();
@@ -41,6 +44,7 @@ final readonly class LedgerTransaction
             [],
             null,
             null,
+            $occurredAt,
         );
     }
 
@@ -69,12 +73,16 @@ final readonly class LedgerTransaction
             $this->entries,
             $this->reversalOf,
             $this->reversedBy,
+            $this->occurredAt(),
         );
     }
 
     #[\NoDiscard]
-    public function reverse(LedgerReference $reference, ?LedgerTransactionId $id = null): LedgerReversal
-    {
+    public function reverse(
+        LedgerReference $reference,
+        ?LedgerTransactionId $id = null,
+        ?DateTimeImmutable $occurredAt = null,
+    ): LedgerReversal {
         if ($this->entries === []) {
             throw InvalidLedgerTransaction::empty();
         }
@@ -101,11 +109,15 @@ final readonly class LedgerTransaction
             $entries,
             $this->id,
             null,
+            $occurredAt,
         );
 
         return new LedgerReversal($this->markReversedBy($reversal->id), $reversal);
     }
 
+    /**
+     * Mark an original for atomic reversal persistence or restore a stored marker.
+     */
     #[\NoDiscard]
     public function markReversedBy(LedgerTransactionId $reversalId): self
     {
@@ -125,6 +137,7 @@ final readonly class LedgerTransaction
             $this->entries,
             $this->reversalOf,
             $reversalId,
+            $this->occurredAt(),
         );
     }
 
@@ -166,6 +179,11 @@ final readonly class LedgerTransaction
         return $this->reversedBy;
     }
 
+    public function occurredAt(): ?DateTimeImmutable
+    {
+        return $this->occurredAt ?? null;
+    }
+
     public function isReversal(): bool
     {
         return $this->type === LedgerTransactionType::Reversal && $this->reversalOf !== null;
@@ -186,6 +204,7 @@ final readonly class LedgerTransaction
             $entries,
             $this->reversalOf,
             $this->reversedBy,
+            $this->occurredAt(),
         );
     }
 

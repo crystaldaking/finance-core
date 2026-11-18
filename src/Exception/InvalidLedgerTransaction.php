@@ -41,6 +41,11 @@ final class InvalidLedgerTransaction extends DomainException
         return new self(sprintf('Ledger transaction reference "%s" already exists.', $reference));
     }
 
+    public static function duplicateId(string $id): self
+    {
+        return new self(sprintf('Ledger transaction id "%s" already exists.', $id));
+    }
+
     public static function reversedTransactionCannotBeModified(string $transactionId): self
     {
         return new self(sprintf('Ledger transaction "%s" has reversal state and cannot be modified.', $transactionId));

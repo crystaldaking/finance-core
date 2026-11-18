@@ -1,0 +1,3 @@
+First execution replayed: no
+Second execution replayed: yes
+Stored transaction id: ltx_invoice_2026_0001

@@ -6,6 +6,26 @@ The project follows Semantic Versioning after `v1.0.0`.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-19
+
+### Added
+
+- Optional ledger occurrence times, balance and FX snapshot times, and FX source information.
+- Public API and direct dependency checks in CI, dependency audits, a runtime-only smoke test, and output assertions for all executable examples.
+- An adapter guide and [upgrade notes](docs/release/v1.2-upgrade.md) for stored identifiers, ledger reversals, and idempotency records.
+
+### Fixed
+
+- Reject trailing control characters in identifiers and numeric strings.
+- Reject pre-marked ledger originals on the ordinary append path and prevent a reversal from sharing its original's id or reference. Check reversals against persisted original postings in the reference test adapter.
+- Canonicalize maps with numeric-looking string keys and support replay of legacy fingerprints when the original field order is available. Keep idempotency scope and key distinct in the example and test stores.
+- Reject ambiguous duplicate fee bounds, blank labels and operations, and negative gross or total fee amounts.
+
+### Changed
+
+- Support `brick/math` 1.x alongside 0.17 and update Infection, PHPUnit, and Psalm. Keep PHP 8.5 as the minimum.
+- Require 90% mutation score and enforce the 90% line-coverage floor in each namespace.
+
 ## [1.1.0] - 2026-07-15
 
 ### Added

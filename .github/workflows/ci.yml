@@ -10,10 +10,18 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COMPOSER_CACHE_DIR: /tmp/finance-core-composer-cache
+
 jobs:
   qa:
     name: QA (${{ matrix.dependencies }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -35,6 +43,12 @@ jobs:
       - name: Validate Composer metadata
         run: composer validate --strict
 
+      - name: Cache Composer downloads
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.COMPOSER_CACHE_DIR }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.json') }}
+
       - name: Install dependencies
         run: composer update --no-interaction --no-progress
 
@@ -44,6 +58,9 @@ jobs:
 
       - name: QA
         run: composer qa
+
+      - name: Audit dependencies
+        run: composer audit --locked
 
       - name: Coverage
         if: matrix.dependencies == 'highest'
@@ -59,6 +76,7 @@ jobs:
   mutation:
     name: Mutation Testing
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: qa
 
     steps:
@@ -84,3 +102,64 @@ jobs:
         with:
           name: mutation-report
           path: build/infection
+
+  compatibility:
+    name: Public API compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          tools: composer:v2
+
+      - name: Compare public API with the previous release
+        run: |
+          mkdir -p "$RUNNER_TEMP/roave"
+          composer --working-dir="$RUNNER_TEMP/roave" require roave/backward-compatibility-check:8.27.0 --no-interaction --no-progress
+          baseline="$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD^)"
+          "$RUNNER_TEMP/roave/vendor/bin/roave-backward-compatibility-check" --from="$baseline" --to=HEAD --format=github-actions
+
+  runtime:
+    name: Runtime (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.5'
+            experimental: false
+          - php: '8.6'
+            experimental: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Install runtime dependencies
+        run: composer install --no-dev --no-interaction --no-progress
+
+      - name: Check declared runtime dependencies
+        if: matrix.php == '8.5'
+        run: |
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/composer-require-checker.phar" \
+            https://github.com/maglnet/ComposerRequireChecker/releases/download/4.24.0/composer-require-checker.phar
+          echo "35d1dfdd7aa94a750f4b4c9b0b22dd5e76b5e9e35fb910c8901f3dafd2ad2ab9  $RUNNER_TEMP/composer-require-checker.phar" | sha256sum --check
+          php "$RUNNER_TEMP/composer-require-checker.phar" check composer.json
+
+      - name: Run examples with runtime-only dependencies
+        run: |
+          for example in examples/*.php; do
+            php "$example"
+          done

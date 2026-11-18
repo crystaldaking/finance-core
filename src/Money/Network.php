@@ -14,7 +14,7 @@ final readonly class Network
 
     public static function fromString(string $value): self
     {
-        if (preg_match('/^[A-Z0-9_-]{2,32}$/', $value) !== 1) {
+        if (preg_match('/\A[A-Z0-9_-]{2,32}\z/', $value) !== 1) {
             throw InvalidNetwork::fromString($value);
         }
 

@@ -101,9 +101,11 @@ final class DomainEventTest extends TestCase
             new DateTimeImmutable('2026-01-01T00:00:00+00:00'),
         );
 
+        $nextEvent = GenericDomainEvent::record('Ledger.TransactionReversed', 'ltx_123', $event->occurredAt());
         $aggregate->record($event);
+        $aggregate->record($nextEvent);
 
-        self::assertCount(1, $aggregate->releaseEvents());
+        self::assertSame([$event, $nextEvent], $aggregate->releaseEvents());
         self::assertCount(0, $aggregate->releaseEvents());
     }
 

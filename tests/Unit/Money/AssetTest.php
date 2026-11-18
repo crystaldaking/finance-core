@@ -45,6 +45,30 @@ final class AssetTest extends TestCase
         self::assertSame('USDT@TRON', (string) $id);
     }
 
+    public function testAssetCodeAndNetworkAreComparableAndPrintable(): void
+    {
+        $code = AssetCode::fromString('USDT');
+        $network = Network::fromString('TRON');
+
+        self::assertSame('USDT', (string) $code);
+        self::assertSame('TRON', (string) $network);
+        self::assertTrue($code->equals(AssetCode::fromString('USDT')));
+        self::assertFalse($code->equals(AssetCode::fromString('EUR')));
+        self::assertTrue($network->equals(Network::fromString('TRON')));
+        self::assertFalse($network->equals(Network::fromString('ETHEREUM')));
+    }
+
+    public function testRegistryEnumeratesActiveAndInactiveAssets(): void
+    {
+        $active = Asset::fiat('EUR');
+        $inactive = Asset::crypto('USDT', 'TRON', 6, active: false);
+        $registry = AssetRegistry::of($active, $inactive);
+
+        self::assertTrue($active->isActive());
+        self::assertFalse($inactive->isActive());
+        self::assertSame(['EUR' => $active, 'USDT@TRON' => $inactive], $registry->all());
+    }
+
     public function testDefaultRegistryContainsNetworkAwareCryptoAssets(): void
     {
         $registry = AssetRegistry::default();

@@ -14,7 +14,7 @@ final readonly class IdempotencyScope
 
     public static function fromString(string $value): self
     {
-        if (preg_match('/^[a-z0-9][a-z0-9_-]*(?::[a-z0-9][a-z0-9_-]*)*$/', $value) !== 1) {
+        if (preg_match('/\A[a-z0-9][a-z0-9_-]*(?::[a-z0-9][a-z0-9_-]*)*\z/', $value) !== 1) {
             throw InvalidIdempotencyScope::fromString($value);
         }
 

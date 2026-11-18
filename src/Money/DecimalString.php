@@ -12,7 +12,7 @@ use Crystal\Finance\Core\Exception\InvalidRate;
 
 final readonly class DecimalString
 {
-    private const string DECIMAL_PATTERN = '/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/';
+    private const string DECIMAL_PATTERN = '/\A-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?\z/';
 
     private function __construct()
     {

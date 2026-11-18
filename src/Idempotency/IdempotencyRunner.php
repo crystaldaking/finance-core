@@ -35,7 +35,7 @@ final readonly class IdempotencyRunner
         $existing = $this->store->find($scope, $key);
 
         if ($existing !== null && !$existing->isExpired($now)) {
-            if (!$existing->fingerprint()->equals($fingerprint)) {
+            if (!$fingerprint->matchesStored($existing->fingerprint())) {
                 throw IdempotencyConflict::fingerprintMismatch($scope->value(), $key->value());
             }
 

@@ -6,6 +6,11 @@ namespace Crystal\Finance\Core\Exception;
 
 final class InvalidFeeContext extends DomainException
 {
+    public static function emptyOperation(): self
+    {
+        return new self('Fee operation must not be blank.');
+    }
+
     public static function invalidMetadataKey(int|string $key): self
     {
         return new self(sprintf('Invalid fee context metadata key "%s". Metadata keys must be strings.', (string) $key));

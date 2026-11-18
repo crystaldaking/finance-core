@@ -1,0 +1,6 @@
+Gross: 250.000000 USDT@TRON
+Merchant net: 243.500000
+Platform fee: 6.500000
+Ledger entries: 3
+Event: Ledger.TransactionPosted
+Fingerprint: sha256:5685636e656b6e69393fa52fbb7c76d5996752b43e728ffa2f260ab87f018b4f

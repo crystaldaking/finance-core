@@ -9,13 +9,15 @@ use JsonException;
 
 final readonly class PayloadFingerprint
 {
-    private function __construct(private string $value)
-    {
+    private function __construct(
+        private string $value,
+        private ?string $legacyValue = null,
+    ) {
     }
 
     public static function fromString(string $value): self
     {
-        if (preg_match('/^sha256:[a-f0-9]{64}$/', $value) !== 1) {
+        if (preg_match('/\Asha256:[a-f0-9]{64}\z/', $value) !== 1) {
             throw InvalidPayloadFingerprint::fromString($value);
         }
 
@@ -28,12 +30,16 @@ final readonly class PayloadFingerprint
     public static function fromArray(array $payload): self
     {
         try {
-            $canonical = json_encode(self::canonicalize($payload), JSON_THROW_ON_ERROR);
+            $canonical = json_encode(self::canonicalize($payload, SORT_STRING), JSON_THROW_ON_ERROR);
+            $legacy = json_encode(self::canonicalize($payload, SORT_REGULAR), JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             throw InvalidPayloadFingerprint::unsupportedPayload();
         }
 
-        return new self('sha256:' . hash('sha256', $canonical));
+        return new self(
+            'sha256:' . hash('sha256', $canonical),
+            $canonical === $legacy ? null : 'sha256:' . hash('sha256', $legacy),
+        );
     }
 
     public function value(): string
@@ -47,10 +53,20 @@ final readonly class PayloadFingerprint
     }
 
     /**
+     * Match a requested payload against a stored fingerprint, including v1.1 fingerprints
+     * calculated from the same input order.
+     */
+    public function matchesStored(self $stored): bool
+    {
+        return $this->equals($stored)
+            || (isset($this->legacyValue) && hash_equals($stored->value, $this->legacyValue));
+    }
+
+    /**
      * @return array<mixed>|bool|int|string|null
      * @psalm-suppress MixedAssignment The input payload is intentionally mixed until validated recursively.
      */
-    private static function canonicalize(mixed $value): array|bool|int|string|null
+    private static function canonicalize(mixed $value, int $keySort): array|bool|int|string|null
     {
         if ($value === null || is_bool($value) || is_int($value) || is_string($value)) {
             return $value;
@@ -61,10 +77,13 @@ final readonly class PayloadFingerprint
         }
 
         if (array_is_list($value)) {
-            return array_map(self::canonicalize(...), $value);
+            return array_map(
+                static fn (mixed $item): array|bool|int|string|null => self::canonicalize($item, $keySort),
+                $value,
+            );
         }
 
-        ksort($value);
+        ksort($value, $keySort);
 
         $canonical = [];
 
@@ -73,7 +92,7 @@ final readonly class PayloadFingerprint
                 throw InvalidPayloadFingerprint::unsupportedPayload();
             }
 
-            $canonical[$key] = self::canonicalize($nestedValue);
+            $canonical[$key] = self::canonicalize($nestedValue, $keySort);
         }
 
         return $canonical;

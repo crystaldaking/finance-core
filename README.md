@@ -8,6 +8,8 @@ Payment workflows, provider integrations, webhooks, refunds, chargebacks, payout
 
 ## Installation
 
+Requires PHP `^8.5`, `brick/math` `^0.17 || ^1.0`, and `psr/clock` `^1.0`. Composer installs the library dependencies. No optional PHP extension is required at runtime.
+
 ```bash
 composer require crystaldaking/finance-core
 ```
@@ -40,6 +42,10 @@ $usdtEthereum = Money::of('10.000000', 'USDT@ETHEREUM', $registry);
 ```
 
 `$usdtTron` and `$usdtEthereum` cannot be added together because they are different assets.
+
+Use decimal strings and strict PHP call sites. The asset defines the amount scale. Rounding operations take an explicit `RoundingMode`, and allocation assigns leftover minor units in input order. See the [money ADR](docs/adr/0002-money-and-decimal-arithmetic.md) for the full policy.
+
+Domain validation exceptions extend `Crystal\Finance\Core\Exception\DomainException`. `RoundingMode::Unnecessary` can raise Brick's `RoundingNecessaryException` when a value cannot fit the asset scale exactly.
 
 ## Fees
 
@@ -96,6 +102,8 @@ $transaction = LedgerTransaction::make(
 
 Reversals are created with `LedgerTransaction::reverse()` and persisted with `Ledger::appendReversal()` through a `LedgerReversalRepository`. This keeps marking the original and appending its single reversal atomic.
 
+Ledger transactions accept an optional business occurrence time. Derived balances and exchange rates can carry an `asOf` timestamp, and an exchange rate can also carry a source. Supply UTC timestamps at the adapter boundary for consistent storage and comparisons.
+
 ## Idempotency
 
 ```php
@@ -113,7 +121,7 @@ $fingerprint = PayloadFingerprint::fromArray([
 ```
 
 Concrete Redis, SQL, cache, and lock implementations live outside this package.
-Idempotency TTLs must be positive. The replay-retention window starts when the callback completes; the initial processing lease should cover the maximum expected callback duration. Store adapters compare record claim ids to fence stale completion and failure attempts.
+Idempotency TTLs must be positive. The replay-retention window starts when the callback completes. The initial lease should cover the maximum expected callback duration. Store adapters compare claim ids to fence stale attempts. See the [adapter guide](docs/adapters.md) for atomicity and external effects.
 
 ## Quality
 
@@ -123,7 +131,7 @@ composer coverage
 composer mutation
 ```
 
-The QA suite validates Composer metadata, coding style, PHPStan max level, Psalm strict analysis, PHPUnit unit tests, and architecture boundaries. The hardening suite adds line coverage and mutation testing:
+The QA suite validates Composer metadata, coding style, PHPStan max level, Psalm strict analysis, PHPUnit unit tests, and architecture boundaries. The hardening suite requires 90% line coverage overall and in each namespace with executable code, plus 90% MSI.
 
 ```bash
 composer hardening
@@ -154,3 +162,5 @@ See `examples/README.md` for the full runnable scenario list.
 - Public API contract: `docs/public-api.md`
 - Release checklist: `docs/release/checklist.md`
 - Changelog: `CHANGELOG.md`
+- [Upgrading to v1.2](docs/release/v1.2-upgrade.md)
+- [v2 roadmap](docs/release/roadmap.md)

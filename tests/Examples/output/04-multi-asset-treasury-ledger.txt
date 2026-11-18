@@ -1,0 +1,4 @@
+Reference: treasury:daily_float_reclassification_001
+EUR float: 500.00
+USDT float: 250.000000
+Balances per asset: yes

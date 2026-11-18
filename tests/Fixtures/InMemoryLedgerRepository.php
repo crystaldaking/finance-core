@@ -20,17 +20,12 @@ final class InMemoryLedgerRepository implements LedgerReversalRepository
     #[\Override]
     public function append(LedgerTransaction $transaction): void
     {
-        if ($transaction->isReversal()) {
+        if ($transaction->isReversal() || $transaction->reversedBy() !== null) {
             throw InvalidLedgerTransaction::reversalRequiresAtomicPersistence();
         }
 
-        $reference = $transaction->reference()->value();
-
-        if (isset($this->transactionsByReference[$reference])) {
-            throw InvalidLedgerTransaction::duplicateReference($reference);
-        }
-
-        $this->transactionsByReference[$reference] = $transaction;
+        $this->assertAvailable($transaction);
+        $this->transactionsByReference[$transaction->reference()->value()] = $transaction;
     }
 
     #[\Override]
@@ -56,11 +51,13 @@ final class InMemoryLedgerRepository implements LedgerReversalRepository
             }
         }
 
-        if (isset($this->transactionsByReference[$reversalReference])) {
-            throw InvalidLedgerTransaction::duplicateReference($reversalReference);
-        }
+        $this->assertAvailable($reversalTransaction);
 
-        $this->transactionsByReference[$originalReference] = $markedOriginal;
+        $persistedPair = new LedgerReversal(
+            $storedOriginal->markReversedBy($reversalTransaction->id()),
+            $reversalTransaction,
+        );
+        $this->transactionsByReference[$originalReference] = $persistedPair->original();
         $this->transactionsByReference[$reversalReference] = $reversalTransaction;
     }
 
@@ -74,5 +71,20 @@ final class InMemoryLedgerRepository implements LedgerReversalRepository
     public function existsByReference(LedgerReference $reference): bool
     {
         return isset($this->transactionsByReference[$reference->value()]);
+    }
+
+    private function assertAvailable(LedgerTransaction $candidate): void
+    {
+        $reference = $candidate->reference()->value();
+
+        if (isset($this->transactionsByReference[$reference])) {
+            throw InvalidLedgerTransaction::duplicateReference($reference);
+        }
+
+        foreach ($this->transactionsByReference as $transaction) {
+            if ($transaction->id()->equals($candidate->id())) {
+                throw InvalidLedgerTransaction::duplicateId($candidate->id()->value());
+            }
+        }
     }
 }

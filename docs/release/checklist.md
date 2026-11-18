@@ -11,6 +11,8 @@ composer mutation
 composer audit
 ```
 
+Verify the CI checks for public API compatibility, runtime dependency declarations, and examples with development dependencies omitted.
+
 ## Manual Review
 
 - Confirm `CHANGELOG.md` has the target version and date.

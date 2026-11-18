@@ -9,6 +9,8 @@ composer qa
 composer coverage
 ```
 
+Coverage and mutation testing require PCOV or Xdebug in the CLI PHP runtime. You can install PCOV with `pecl install pcov`. For Xdebug, use `XDEBUG_MODE=coverage` when running the checks.
+
 For release candidates and high-risk financial changes, also run:
 
 ```bash

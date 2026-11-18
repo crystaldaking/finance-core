@@ -26,15 +26,15 @@
     },
     "require": {
         "php": "^8.5",
-        "brick/math": "^0.17",
+        "brick/math": "^0.17 || ^1.0",
         "psr/clock": "^1.0"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.95",
-        "infection/infection": "^0.33",
+        "infection/infection": "^0.35",
         "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^12.2",
-        "vimeo/psalm": "^6.16.1"
+        "phpunit/phpunit": "^13.0",
+        "vimeo/psalm": "^7.0"
     },
     "autoload": {
         "psr-4": {
@@ -48,13 +48,20 @@
     },
     "scripts": {
         "test": "phpunit",
-        "test:coverage": "php -d pcov.enabled=1 vendor/bin/phpunit --coverage-clover build/logs/clover.xml --coverage-html build/coverage --coverage-text --only-summary-for-coverage-text",
+        "coverage:driver": "@php -d pcov.enabled=1 tools/check-coverage-driver.php",
+        "test:coverage": [
+            "@coverage:driver",
+            "@php -d pcov.enabled=1 vendor/bin/phpunit --coverage-clover build/logs/clover.xml --coverage-html build/coverage --coverage-text --only-summary-for-coverage-text"
+        ],
         "coverage:check": "php tools/check-coverage.php build/logs/clover.xml 90",
         "coverage": [
             "@test:coverage",
             "@coverage:check"
         ],
-        "mutation": "php -d pcov.enabled=1 vendor/bin/infection --threads=max",
+        "mutation": [
+            "@coverage:driver",
+            "@php -d pcov.enabled=1 vendor/bin/infection --threads=max"
+        ],
         "analyse:phpstan": "phpstan analyse --memory-limit=1G",
         "analyse:psalm": "psalm --no-cache",
         "analyse": [

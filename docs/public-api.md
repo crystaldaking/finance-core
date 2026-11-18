@@ -14,17 +14,20 @@ The package exposes stable primitives for generic financial applications. It int
 
 ## Stability Commitments
 
-- `Money` never accepts or emits floats.
+- `Money` accepts decimal strings and performs no floating-point arithmetic. Call from strict PHP code to reject PHP's scalar coercion.
 - `Money::toMinorUnitString()` is the safe minor-unit output API.
 - `AssetId` preserves network identity for crypto assets.
 - Ledger entries are positive debit or credit facts.
 - Ledger transactions must balance per asset, not merely globally.
 - Reversals are explicit transactions created from an original transaction and persisted through `Ledger::appendReversal()`.
 - `LedgerReversalRepository` provides the atomic persistence boundary that prevents repeated reversals.
+- Optional ledger timestamps and exchange-rate provenance carry application-supplied facts. Missing values are represented by `null`.
 - Fee breakdown line amounts sum to the final total fee, including minimum and maximum adjustments.
 - Fee calculations reject negative gross amounts and preserve custom component labels in adjustment lines.
 - Idempotency compares canonical payload fingerprints and replays completed records without rerunning callbacks.
-- Idempotency TTLs must be positive; replay retention is refreshed from callback completion, and claim ids fence stale attempts.
+- Idempotency TTLs must be positive. Replay retention is refreshed from callback completion, and claim ids fence stale attempts.
+
+See the [adapter guide](adapters.md) for persistence contracts and the [compatibility policy](backward-compatibility.md) for API changes.
 
 ## Explicitly Out Of Scope
 

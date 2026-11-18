@@ -10,6 +10,7 @@ use Crystal\Finance\Core\Exception\UnbalancedLedgerTransaction;
 use Crystal\Finance\Core\Ledger\Ledger;
 use Crystal\Finance\Core\Ledger\LedgerAccountId;
 use Crystal\Finance\Core\Ledger\LedgerEntryId;
+use Crystal\Finance\Core\Ledger\LedgerMetadata;
 use Crystal\Finance\Core\Ledger\LedgerReference;
 use Crystal\Finance\Core\Ledger\LedgerRepository;
 use Crystal\Finance\Core\Ledger\LedgerReversal;
@@ -20,6 +21,8 @@ use Crystal\Finance\Core\Ledger\LedgerValidator;
 use Crystal\Finance\Core\Money\AssetRegistry;
 use Crystal\Finance\Core\Money\Money;
 use Crystal\Finance\Core\Tests\Fixtures\InMemoryLedgerRepository;
+use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class LedgerTransactionTest extends TestCase
@@ -272,8 +275,98 @@ final class LedgerTransactionTest extends TestCase
             ->credit($this->account('equity'), $this->money('2.00'));
 
         $this->expectException(UnbalancedLedgerTransaction::class);
+        $this->expectExceptionMessageMatches('/debits "1\.00" do not equal credits "2\.00"/');
 
         (new Ledger($this->plainRepository()))->append($transaction);
+    }
+
+    public function testMarkedOriginalCannotUseOrdinaryAppendPath(): void
+    {
+        $transaction = LedgerTransaction::make(LedgerTransactionType::Transfer, LedgerReference::manual('original'))
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'))
+            ->markReversedBy(LedgerTransactionId::fromString('missing_reversal'));
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        (new Ledger($this->plainRepository()))->append($transaction);
+    }
+
+    #[DataProvider('reversalCollisions')]
+    public function testReversalMustHaveItsOwnIdAndReference(string $id, string $reference): void
+    {
+        $original = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('original'),
+            id: LedgerTransactionId::fromString('original'),
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'));
+
+        $this->expectException(InvalidLedgerTransaction::class);
+
+        $unused = $original->reverse(LedgerReference::manual($reference), LedgerTransactionId::fromString($id));
+    }
+
+    /** @return iterable<string, array{string, string}> */
+    public static function reversalCollisions(): iterable
+    {
+        yield 'same id' => ['original', 'correction'];
+        yield 'same reference' => ['correction', 'original'];
+    }
+
+    public function testAtomicReversalRejectsChangedStoredPostings(): void
+    {
+        $repository = new InMemoryLedgerRepository();
+        $ledger = new Ledger($repository);
+        $original = LedgerTransaction::make(LedgerTransactionType::Transfer, LedgerReference::manual('original'))
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'));
+        $ledger->append($original);
+        $reference = LedgerReference::manual('correction');
+        $pair = $original
+            ->debit($this->account('cash'), $this->money('2.00'))
+            ->credit($this->account('equity'), $this->money('2.00'))
+            ->reverse($reference);
+
+        try {
+            $ledger->appendReversal($pair);
+            self::fail('A reversal must offset the stored original.');
+        } catch (InvalidLedgerTransaction) {
+            self::assertSame($original, $repository->findByReference($original->reference()));
+            self::assertFalse($repository->existsByReference($reference));
+        }
+    }
+
+    public function testAtomicReversalPreservesOriginalMetadataAndTimestamps(): void
+    {
+        $repository = new InMemoryLedgerRepository();
+        $ledger = new Ledger($repository);
+        $postedAt = new DateTimeImmutable('2026-01-01T01:00:00Z');
+        $reversedAt = new DateTimeImmutable('2026-01-02T01:00:00Z');
+        $original = LedgerTransaction::make(
+            LedgerTransactionType::Transfer,
+            LedgerReference::manual('original'),
+            LedgerMetadata::fromArray(['memo' => 'original', 'reversed_by' => 'reserved']),
+            occurredAt: $postedAt,
+        )
+            ->debit($this->account('cash'), $this->money('1.00'))
+            ->credit($this->account('equity'), $this->money('1.00'));
+        $ledger->append($original);
+        $reference = LedgerReference::manual('correction');
+        $pair = $original->withMetadata(LedgerMetadata::fromArray(['memo' => 'modified', 'reversal_of' => 'reserved']))
+            ->reverse($reference, occurredAt: $reversedAt);
+
+        $ledger->appendReversal($pair);
+
+        $stored = $repository->findByReference($original->reference());
+        self::assertNotNull($stored);
+        self::assertSame('original', $stored->metadata()->get('memo'));
+        self::assertSame($pair->reversal()->id()->value(), $stored->metadata()->get('reversed_by'));
+        self::assertSame($original->entries(), $stored->entries());
+        self::assertSame($postedAt, $stored->occurredAt());
+        self::assertSame($reversedAt, $pair->reversal()->occurredAt());
+        self::assertSame($original->id()->value(), $pair->reversal()->metadata()->get('reversal_of'));
     }
 
     public function testAtomicReversalUpdatesStoredOriginalAndPreventsSecondReversal(): void

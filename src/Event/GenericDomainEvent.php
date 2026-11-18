@@ -18,11 +18,11 @@ final readonly class GenericDomainEvent implements DomainEvent
         private EventMetadata $metadata,
         private ?AuditContext $auditContext,
     ) {
-        if (preg_match('/^[A-Z][A-Za-z0-9.]{1,127}$/', $eventName) !== 1) {
+        if (preg_match('/\A[A-Z][A-Za-z0-9.]{1,127}\z/', $eventName) !== 1) {
             throw InvalidDomainEvent::invalidName($eventName);
         }
 
-        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/', $aggregateId) !== 1) {
+        if (preg_match('/\A[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\z/', $aggregateId) !== 1) {
             throw InvalidDomainEvent::invalidAggregateId($aggregateId);
         }
     }

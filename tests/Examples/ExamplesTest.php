@@ -10,16 +10,17 @@ use PHPUnit\Framework\TestCase;
 final class ExamplesTest extends TestCase
 {
     #[DataProvider('exampleFiles')]
-    public function testExampleRunsSuccessfully(string $exampleFile): void
+    public function testExampleProducesExpectedOutput(string $exampleFile): void
     {
         $command = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($exampleFile);
         $output = [];
         $exitCode = 0;
 
-        exec($command, $output, $exitCode);
+        exec($command . ' 2>&1', $output, $exitCode);
 
-        self::assertSame(0, $exitCode, self::outputToString($output));
-        self::assertNotSame([], $output);
+        $stdout = self::outputToString($output);
+        self::assertSame(0, $exitCode, $stdout);
+        self::assertStringEqualsFile(__DIR__ . '/output/' . basename($exampleFile, '.php') . '.txt', $stdout);
     }
 
     /**
@@ -48,6 +49,6 @@ final class ExamplesTest extends TestCase
             }
         }
 
-        return implode(PHP_EOL, $lines);
+        return implode("\n", $lines) . "\n";
     }
 }

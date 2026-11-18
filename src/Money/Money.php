@@ -37,7 +37,7 @@ final readonly class Money
     {
         $minorUnitsString = $minorUnits instanceof BigInteger ? $minorUnits->toString() : (string) $minorUnits;
 
-        if (preg_match('/^-?(?:0|[1-9][0-9]*)$/', $minorUnitsString) !== 1) {
+        if (preg_match('/\A-?(?:0|[1-9][0-9]*)\z/', $minorUnitsString) !== 1) {
             throw InvalidMoneyAmount::invalidMinorUnits($minorUnitsString);
         }
 
@@ -172,13 +172,7 @@ final readonly class Money
         $ratioSum = BigInteger::zero();
 
         foreach ($ratios as $ratio) {
-            $ratioString = $ratio instanceof BigInteger ? $ratio->toString() : (string) $ratio;
-
-            if (preg_match('/^(?:[1-9][0-9]*)$/', $ratioString) !== 1) {
-                throw InvalidAllocation::invalidRatio($ratioString);
-            }
-
-            $parsedRatio = BigInteger::of($ratioString);
+            $parsedRatio = self::parseRatio($ratio);
             $parsedRatios[] = $parsedRatio;
             $ratioSum = $ratioSum->plus($parsedRatio);
         }
@@ -208,6 +202,21 @@ final readonly class Money
         }
 
         return $result;
+    }
+
+    private static function parseRatio(mixed $ratio): BigInteger
+    {
+        if (!$ratio instanceof BigInteger && !is_int($ratio) && !is_string($ratio)) {
+            throw InvalidAllocation::invalidRatio(get_debug_type($ratio));
+        }
+
+        $ratioString = $ratio instanceof BigInteger ? $ratio->toString() : (string) $ratio;
+
+        if (preg_match('/\A[1-9][0-9]*\z/', $ratioString) !== 1) {
+            throw InvalidAllocation::invalidRatio($ratioString);
+        }
+
+        return BigInteger::of($ratioString);
     }
 
     private function assertSameAsset(self $other): void

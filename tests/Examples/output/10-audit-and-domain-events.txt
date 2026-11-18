@@ -1,0 +1,3 @@
+Event: Ledger.TransactionPosted
+Audit reason: Nightly reconciliation posted a correction transaction
+Outbox events: 1

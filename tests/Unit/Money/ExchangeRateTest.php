@@ -13,6 +13,7 @@ use Crystal\Finance\Core\Money\ExchangeRate;
 use Crystal\Finance\Core\Money\Money;
 use Crystal\Finance\Core\Money\Rate;
 use Crystal\Finance\Core\Money\RoundingMode;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 final class ExchangeRateTest extends TestCase
@@ -22,12 +23,17 @@ final class ExchangeRateTest extends TestCase
         $registry = AssetRegistry::default();
         $pair = AssetPair::of($registry->get('EUR'), $registry->get('USD'));
         $rate = Rate::of('1.0875');
-        $exchangeRate = ExchangeRate::of($pair, $rate);
+        $asOf = new DateTimeImmutable('2026-01-01T00:00:00Z');
+        $exchangeRate = ExchangeRate::of($pair, $rate, $asOf, 'Reference feed');
 
         $converted = $exchangeRate->convert(Money::of('10.00', 'EUR', $registry), RoundingMode::HalfUp);
 
         self::assertSame($pair, $exchangeRate->pair());
         self::assertSame($rate, $exchangeRate->rate());
+        self::assertSame($asOf, $exchangeRate->asOf());
+        self::assertSame('Reference feed', $exchangeRate->source());
+        self::assertNull(ExchangeRate::of($pair, $rate)->asOf());
+        self::assertNull(ExchangeRate::of($pair, $rate)->source());
         self::assertSame('1.0875', $rate->toDecimalString());
         self::assertSame('10.88', $converted->toDecimalString());
         self::assertSame('USD', $converted->asset()->id()->value());

@@ -7,10 +7,11 @@ namespace Crystal\Finance\Core\Ledger;
 interface LedgerReversalRepository extends LedgerRepository
 {
     /**
-     * Atomically persist the marked original and its reversal.
+     * Atomically mark the stored original as reversed and append the reversal.
      *
-     * Implementations must reject a reversal when the stored original is missing,
-     * has already been reversed, or already has a reversal transaction.
+     * Reject a missing or already reversed original, duplicate reversal id or reference,
+     * or reversal entries that do not offset the stored original entries.
+     * Preserve the stored original facts and update only its reversal marker.
      */
     public function appendReversal(LedgerReversal $reversal): void;
 }

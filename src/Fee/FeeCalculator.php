@@ -24,8 +24,12 @@ final readonly class FeeCalculator
             match ($component->type()) {
                 FeeComponentType::Percentage => $this->applyPercentage($amount, $component, $totalFee, $lines),
                 FeeComponentType::Fixed => $this->applyFixed($amount, $component, $totalFee, $lines),
-                FeeComponentType::Minimum => $minimum = $component,
-                FeeComponentType::Maximum => $maximum = $component,
+                FeeComponentType::Minimum => $minimum = $minimum === null
+                    ? $component
+                    : throw InvalidFeeRule::duplicateBound('minimum'),
+                FeeComponentType::Maximum => $maximum = $maximum === null
+                    ? $component
+                    : throw InvalidFeeRule::duplicateBound('maximum'),
             };
         }
 

@@ -15,6 +15,10 @@ final readonly class FeeContext
         private string $operation,
         private array $metadata,
     ) {
+        if (trim($operation) === '') {
+            throw InvalidFeeContext::emptyOperation();
+        }
+
         self::assertValidMetadata($metadata);
     }
 
